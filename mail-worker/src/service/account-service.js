@@ -257,6 +257,20 @@ const accountService = {
 		await orm(c).update(account).set({ allReceive: accountRow.allReceive ? 0 : 1 }).where(eq(account.accountId, accountId)).run();
 	},
 
+	async setSignature(c, params, userId) {
+		const { accountId, signature } = params;
+		if (signature && signature.length > 5000) {
+			throw new BizError(t('signatureLengthLimit'));
+		}
+		const accountRow = await this.selectById(c, accountId);
+		if (!accountRow || accountRow.userId !== userId) {
+			throw new BizError(t('noUserAccount'));
+		}
+		await orm(c).update(account).set({ signature: signature || '' }).where(
+			and(eq(account.userId, userId), eq(account.accountId, accountId))
+		).run();
+	},
+
 	async setAsTop(c, params, userId) {
 		const { accountId } = params;
 		console.log(accountId);

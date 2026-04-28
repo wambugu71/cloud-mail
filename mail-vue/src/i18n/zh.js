@@ -324,6 +324,9 @@ const zh = {
     searchUser: '搜索用户',
     searchEmail: '搜索邮箱',
     searchSender: '搜索发件人',
-    userEmail: '用户邮箱'
+    userEmail: '用户邮箱',
+    emailSignature: '邮件签名',
+    emailSignatureDesc: '自动追加到所有发出邮件的末尾',
+    signatureLengthLimit: '签名不能超过5000个字符'
 }
 export default zh

@@ -241,6 +241,17 @@ const emailService = {
 			name = emailUtils.getName(accountRow.email);
 		}
 
+		//追加邮件签名
+		const signature = accountRow.signature || '';
+		if (signature) {
+			html = html + `<div style="margin-top:20px;padding-top:10px;border-top:1px solid #e0e0e0;">${signature}</div>`;
+			// Strip HTML tags for plain-text fallback
+			const signatureText = signature.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+			if (signatureText) {
+				text = (text || '') + '\n\n--\n' + signatureText;
+			}
+		}
+
 		let emailRow = {
 			messageId: null
 		};

@@ -30,6 +30,26 @@
         </div>
       </div>
     </div>
+
+    <!-- Email Signature Section -->
+    <div class="signature-section">
+      <div class="title">{{$t('emailSignature')}}</div>
+      <div class="signature-desc">{{$t('emailSignatureDesc')}}</div>
+      <div class="signature-editor-wrap">
+        <tinyEditor
+          ref="signatureEditorRef"
+          :def-value="signatureContent"
+          editor-id="signature-editor"
+          @change="onSignatureChange"
+        />
+      </div>
+      <div class="signature-actions">
+        <el-button type="primary" :loading="saveSignatureLoading" @click="saveSignature">
+          {{$t('save')}}
+        </el-button>
+      </div>
+    </div>
+
     <div class="del-email" v-perm="'my:delete'">
       <div class="title">{{$t('deleteUser')}}</div>
       <div style="color: var(--regular-text-color);">
@@ -49,13 +69,14 @@
   </div>
 </template>
 <script setup>
-import {reactive, ref, defineOptions} from 'vue'
+import {reactive, ref, defineOptions, onMounted} from 'vue'
 import {resetPassword, userDelete} from "@/request/my.js";
 import {useUserStore} from "@/store/user.js";
 import router from "@/router/index.js";
-import {accountSetName} from "@/request/account.js";
+import {accountSetName, accountSetSignature} from "@/request/account.js";
 import {useAccountStore} from "@/store/account.js";
 import {useI18n} from "vue-i18n";
+import tinyEditor from "@/components/tiny-editor/index.vue";
 
 const { t } = useI18n()
 const accountStore = useAccountStore()
@@ -63,10 +84,41 @@ const userStore = useUserStore();
 const setPwdLoading = ref(false)
 const setNameShow = ref(false)
 const accountName = ref(null)
+const signatureEditorRef = ref(null)
+const signatureContent = ref('')
+const saveSignatureLoading = ref(false)
+let currentSignatureHtml = ''
 
 defineOptions({
   name: 'setting'
 })
+
+onMounted(() => {
+  signatureContent.value = userStore.user.account?.signature || ''
+  currentSignatureHtml = signatureContent.value
+})
+
+function onSignatureChange(html) {
+  currentSignatureHtml = html
+}
+
+async function saveSignature() {
+  saveSignatureLoading.value = true
+  try {
+    await accountSetSignature(userStore.user.account.accountId, currentSignatureHtml)
+    // Update local store so it's reflected immediately
+    if (userStore.user.account) {
+      userStore.user.account.signature = currentSignatureHtml
+    }
+    ElMessage({
+      message: t('saveSuccessMsg'),
+      type: 'success',
+      plain: true,
+    })
+  } finally {
+    saveSignatureLoading.value = false
+  }
+}
 
 function showSetName() {
   accountName.value = userStore.user.name
@@ -249,6 +301,34 @@ function submitPwd() {
     }
   }
 
+  .signature-section {
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--el-border-color-lighter, #e4e7ed);
+
+    .signature-desc {
+      color: var(--regular-text-color);
+      font-size: 13px;
+      margin-top: -8px;
+    }
+
+    .signature-editor-wrap {
+      height: 280px;
+      border: 1px solid var(--el-border-color, #dcdfe6);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .signature-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
   .del-email {
     font-size: 14px;
     display: flex;
@@ -257,3 +337,4 @@ function submitPwd() {
   }
 }
 </style>
+

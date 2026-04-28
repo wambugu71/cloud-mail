@@ -11,6 +11,7 @@ const en = {
 	delMyAccount: 'Cannot delete your own email',
 	noUserAccount: 'This email does not belong to the current user',
 	usernameLengthLimit: 'Username length exceeds the limit',
+	signatureLengthLimit: 'Signature cannot exceed 5000 characters',
 	noOsSendPic: 'Cannot send body images: object storage not configured',
 	noOsDomainSendAtt: 'Cannot send attachments: object storage domain not configured',
 	noOsSendAtt: 'Cannot send attachments: object storage not configured',

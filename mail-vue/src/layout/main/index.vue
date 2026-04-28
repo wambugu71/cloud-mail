@@ -162,6 +162,10 @@ const handleResize = () => {
 
 .main-view {
   background: var(--el-bg-color);
+
+  @media (max-width: 1024px) {
+    padding-bottom: 64px; /* height of bottom nav */
+  }
 }
 
 

@@ -23,3 +23,7 @@ export function accountSetAllReceive(accountId) {
 export function accountSetAsTop(accountId) {
     return http.put('/account/setAsTop', {accountId})
 }
+
+export function accountSetSignature(accountId, signature) {
+    return http.put('/account/setSignature', {accountId, signature})
+}

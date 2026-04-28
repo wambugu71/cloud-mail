@@ -324,7 +324,10 @@ const en = {
     searchUser: 'Search by user',
     searchEmail: 'Search by Email',
     searchSender: 'Search by Sender',
-    userEmail: 'Email Address'
+    userEmail: 'Email Address',
+    emailSignature: 'Email Signature',
+    emailSignatureDesc: 'Automatically appended to all outgoing emails',
+    signatureLengthLimit: 'Signature cannot exceed 5000 characters'
 }
 
 export default en
