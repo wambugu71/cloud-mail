@@ -10,6 +10,7 @@ import emailUtils from '../utils/email-utils';
 import roleService from '../service/role-service';
 import userService from '../service/user-service';
 import telegramService from '../service/telegram-service';
+import pushService from '../service/push-service';
 
 export async function email(message, env, ctx) {
 
@@ -145,6 +146,11 @@ export async function email(message, env, ctx) {
 		//转发到TG
 		if (tgBotStatus === settingConst.tgBotStatus.OPEN && tgChatId) {
 			await telegramService.sendEmailToBot({ env }, emailRow)
+		}
+
+		// Web Push notification to account owner
+		if (account && account.userId > 0) {
+			pushService.notify({ env }, account.userId, emailRow).catch(() => {});
 		}
 
 		//转发到其他邮箱

@@ -21,6 +21,7 @@ import domainUtils from '../utils/domain-uitls';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
+import pushService from './push-service';
 
 const emailService = {
 
@@ -468,6 +469,11 @@ const emailService = {
 				attValues.userId = emailRow.userId;
 				attValues.attId = null;
 				await orm(c).insert(att).values(attValues).run();
+			}
+
+			// Send Web Push notification to the recipient (fire-and-forget, never blocks)
+			if (emailRow.userId && emailRow.userId > 0) {
+				pushService.notify(c, emailRow.userId, emailRow).catch(() => {});
 			}
 
 		}

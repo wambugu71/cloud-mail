@@ -1,70 +1,125 @@
 <template>
   <div class="box">
+    <!-- Header Actions -->
     <div class="header-actions">
-      <Icon class="icon" icon="material-symbols-light:arrow-back-ios-new" width="20" height="20" @click="handleBack"/>
-      <Icon v-perm="'email:delete'" class="icon" icon="uiw:delete" width="16" height="16" @click="handleDelete"/>
-      <span class="star" v-if="emailStore.contentData.showStar">
-        <Icon class="icon" @click="changeStar" v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-        <Icon class="icon" @click="changeStar" v-else icon="solar:star-line-duotone" width="18" height="18"/>
-      </span>
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openReply" icon="la:reply" width="21" height="21" />
-      <Icon class="icon" v-if="emailStore.contentData.showReply" v-perm="'email:send'"  @click="openForward" icon="iconoir:arrow-up-right" width="20" height="20" />
+      <div class="left-actions">
+        <!-- Back button only on mobile -->
+        <button class="action-btn" v-if="isMobile" @click="handleBack" :title="$t('back') || 'Back'">
+          <Icon icon="material-symbols:arrow-back-rounded" width="20" height="20" />
+        </button>
+        
+        <button class="action-btn" :title="$t('archive') || 'Archive'">
+          <Icon icon="material-symbols:archive-outline" width="20" height="20" />
+        </button>
+        <button v-perm="'email:delete'" class="action-btn delete-btn" @click="handleDelete" :title="$t('delete') || 'Delete'">
+          <Icon icon="material-symbols:delete-outline" width="20" height="20" />
+        </button>
+        
+        <div class="divider"></div>
+        
+        <button class="action-btn" :title="$t('markUnread') || 'Mark Unread'">
+          <Icon icon="material-symbols:mark-email-unread-outline" width="20" height="20" />
+        </button>
+        <button class="action-btn" :title="$t('moveTo') || 'Move to'">
+          <Icon icon="material-symbols:drive-file-move-outline" width="20" height="20" />
+        </button>
+        <button class="action-btn" v-if="emailStore.contentData.showStar" @click="changeStar" :title="$t('star') || 'Star'">
+          <Icon v-if="email.isStar" icon="fluent-color:star-16" width="20" height="20" />
+          <Icon v-else icon="solar:star-line-duotone" width="20" height="20" />
+        </button>
+      </div>
+
+      <div class="right-actions">
+        <button v-if="emailStore.contentData.showReply" v-perm="'email:send'" class="action-btn" @click="openReply" :title="$t('reply') || 'Reply'">
+          <Icon icon="material-symbols:reply" width="20" height="20" />
+        </button>
+        <button v-if="emailStore.contentData.showReply" v-perm="'email:send'" class="action-btn" @click="openForward" :title="$t('forward') || 'Forward'">
+          <Icon icon="material-symbols:forward" width="20" height="20" />
+        </button>
+        <button class="action-btn" :title="$t('more') || 'More'">
+          <Icon icon="material-symbols:more-vert" width="20" height="20" />
+        </button>
+      </div>
     </div>
-    <div></div>
+
     <el-scrollbar class="scrollbar">
       <div class="container">
-        <div class="email-title">
-          {{ email.subject }}
-        </div>
-        <div class="content">
-          <div class="email-info">
-            <div>
-              <div class="send"><span class="send-source">{{$t('from')}}</span>
-                <div class="send-name">
-                  <span class="send-name-title">{{ email.name }}</span>
-                  <span><{{ email.sendEmail }}></span>
-                </div>
+        <!-- Subject -->
+        <h1 class="email-title">{{ email.subject || '(No Subject)' }}</h1>
+        
+        <!-- Sender Info -->
+        <div class="sender-info">
+          <div class="sender-left">
+            <div class="sender-avatar" :style="getAvatarStyle(email.name || email.sendEmail)">
+              {{ getInitials(email.name || email.sendEmail) }}
+            </div>
+            <div class="sender-details">
+              <div class="name-line">
+                <span class="sender-name">{{ email.name || email.sendEmail }}</span>
+                <span class="sender-email">&lt;{{ email.sendEmail }}&gt;</span>
               </div>
-              <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
-              <div class="date">
-                <div>{{ formatDetailDate(email.createTime) }}</div>
+              <div class="to-line">
+                to me
+                <Icon icon="material-symbols:arrow-drop-down" width="16" height="16" class="dropdown-icon" />
               </div>
             </div>
+          </div>
+          <div class="sender-right">
+            <span class="sender-date">{{ formatDetailDate(email.createTime) }}</span>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="email-info">
             <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
             <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
           </div>
+
+          <!-- Email Body -->
           <el-scrollbar class="htm-scrollbar" :class="email.attList.length === 0 ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="formatImage(email.content)" v-if="email.content" />
             <pre v-else class="email-text" >{{email.text}}</pre>
           </el-scrollbar>
-          <div class="att" v-if="email.attList.length > 0">
-            <div class="att-title">
-              <span>{{$t('attachments')}}</span>
-              <span>{{$t('attCount',{total: email.attList.length})}}</span>
-            </div>
-            <div class="att-box">
 
+          <!-- Attachments -->
+          <div class="att" v-if="email.attList.length > 0">
+            <h4 class="att-title">
+              <Icon icon="material-symbols:attachment" width="18" height="18" />
+              {{$t('attCount',{total: email.attList.length})}} Attachments
+            </h4>
+            <div class="att-box">
               <div class="att-item" v-for="att in email.attList" :key="att.attId">
-                <div class="att-icon" @click="showImage(att.key)">
-                  <Icon v-bind="getIconByName(att.filename)" />
+                <div class="att-icon-wrapper" :class="getExtName(att.filename)" @click="showImage(att.key)">
+                  <Icon v-bind="getIconByName(att.filename)" width="24" height="24" />
                 </div>
-                <div class="att-name" @click="showImage(att.key)">
-                  {{ att.filename }}
+                <div class="att-details" @click="showImage(att.key)">
+                  <p class="att-name">{{ att.filename }}</p>
+                  <p class="att-size">{{ formatBytes(att.size) }}</p>
                 </div>
-                <div class="att-size">{{ formatBytes(att.size) }}</div>
-                <div class="opt-icon att-icon">
-                  <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="22" height="22" @click="showImage(att.key)"/>
+                <div class="opt-icon">
+                  <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="20" height="20" @click="showImage(att.key)"/>
                   <a :href="cvtR2Url(att.key)" download>
-                    <Icon icon="system-uicons:push-down" width="22" height="22"/>
+                    <Icon icon="system-uicons:push-down" width="20" height="20"/>
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inline Reply Box -->
+          <div class="inline-reply" v-if="emailStore.contentData.showReply">
+            <div class="reply-box" @click="openReply">
+              <div class="reply-header">
+                <Icon icon="material-symbols:reply" width="20" height="20" />
+                <span>{{ $t('replyTo') || 'Reply to' }} {{ email.name || email.sendEmail }}...</span>
               </div>
             </div>
           </div>
         </div>
       </div>
     </el-scrollbar>
+    
     <el-image-viewer
         v-if="showPreview"
         :url-list="srcList"
@@ -101,6 +156,48 @@ const router = useRouter()
 const email = emailStore.contentData.email
 const showPreview = ref(false)
 const srcList = reactive([])
+
+const isMobile = ref(window.innerWidth < 1024);
+const handleResize = () => { isMobile.value = window.innerWidth < 1024; };
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  if (emailStore.contentData.showUnread && email.unread === EmailUnreadEnum.UNREAD) {
+    email.unread = EmailUnreadEnum.READ;
+    emailRead([email.emailId]);
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+  emailStore.contentData.showUnread = false;
+})
+
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(/[\s.@]+/);
+  let initials = '';
+  if (parts.length >= 2) {
+    initials = (parts[0][0] + parts[1][0]).toUpperCase();
+  } else {
+    initials = parts[0].substring(0, 2).toUpperCase();
+  }
+  return initials;
+}
+
+const avatarColors = [
+  '#004ac6', '#ba1a1a', '#00759f', '#565e74', '#005b7c', '#2563eb', '#131b2e'
+];
+
+function getAvatarStyle(name) {
+  if (!name) return { backgroundColor: avatarColors[0], color: '#fff' };
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = avatarColors[Math.abs(hash) % avatarColors.length];
+  return { backgroundColor: color, color: '#fff' };
+}
 
 const { t } = useI18n()
 watch(() => accountStore.currentAccountId, () => {
@@ -217,186 +314,302 @@ const handleDelete = () => {
 <style scoped lang="scss">
 .box {
   height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  background: var(--el-bg-color);
 }
 
 .header-actions {
-  padding: 9px 15px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: var(--header-actions-border);
-  font-size: 18px;
-  .star {
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+  flex-shrink: 0;
+
+  @media (max-width: 1023px) {
+    padding: 0 16px;
+  }
+
+  .left-actions, .right-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 21px;
-  }
-  .icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--el-text-color-regular);
+    background: transparent;
+    border: none;
     cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: var(--el-fill-color-light);
+      color: var(--el-color-primary);
+    }
+    
+    &.delete-btn:hover {
+      background: var(--el-color-danger-light-9);
+      color: var(--el-color-danger);
+    }
+  }
+
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: var(--el-border-color-lighter);
+    margin: 0 8px;
   }
 }
 
-
 .scrollbar {
-  height: calc(100% - 38px);
+  flex: 1;
   width: 100%;
+  background: var(--el-bg-color-page);
 }
 
 .container {
-  font-size: 14px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
+  padding: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--el-bg-color);
+  border-radius: 12px;
+  box-shadow: var(--el-box-shadow-light);
+  margin-top: 24px;
+  margin-bottom: 24px;
+  border: 1px solid var(--el-border-color-lighter);
+  font-family: 'Manrope', sans-serif;
+
   @media (max-width: 1023px) {
-    padding-left: 15px;
-    padding-right: 15px;
+    padding: 20px;
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
   }
 
   .email-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+    margin: 0 0 24px 0;
+    line-height: 1.3;
   }
 
-  .htm-scrollbar {
+  .sender-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+
+    @media (max-width: 767px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .sender-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .sender-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .sender-details {
+        display: flex;
+        flex-direction: column;
+
+        .name-line {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          flex-wrap: wrap;
+
+          .sender-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--el-text-color-primary);
+          }
+
+          .sender-email {
+            font-size: 13px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+
+        .to-line {
+          display: flex;
+          align-items: center;
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          margin-top: 4px;
+
+          .dropdown-icon {
+            cursor: pointer;
+            &:hover { color: var(--el-color-primary); }
+          }
+        }
+      }
+    }
+
+    .sender-right {
+      .sender-date {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+    }
   }
 
   .content {
     display: flex;
     flex-direction: column;
 
+    .email-msg {
+      max-width: 400px;
+      margin-bottom: 16px;
+    }
+
+    .email-text, .shadow-html {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--el-text-color-regular);
+      font-family: inherit;
+    }
+    
+    .email-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+    }
+
     .att {
-      margin-top: 30px;
-      margin-bottom: 30px;
-      border: 1px solid var(--light-border-color);
-      padding: 14px;
-      border-radius: 6px;
-      width: fit-content;
-      .att-box {
-        min-width: min(410px,calc(100vw - 60px));
-        max-width: 600px;
-        display: grid;
-        gap: 12px;
-        grid-template-rows: 1fr;
-      }
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--el-border-color-lighter);
 
       .att-title {
-        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        margin: 0 0 16px 0;
         display: flex;
-        justify-content: space-between;
-        span:first-child {
-          font-weight: bold;
-        }
+        align-items: center;
+        gap: 8px;
       }
 
-      .att-item {
-        cursor: pointer;
-        div {
-          align-self: center;
-        }
-        background: var(--light-ill);
-        padding: 5px 7px;
-        border-radius: 4px;
-        align-self: start;
-        display: grid;
-        grid-template-columns: auto 1fr auto auto;
-        .att-icon {
-          display: grid;
-        }
+      .att-box {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
 
-        .att-size {
-          color: var(--secondary-text-color);
-        }
-
-        .att-name {
-          margin-left: 8px;
-          margin-right: 8px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          word-break: break-all;
-        }
-
-        .att-image {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-
-        .opt-icon {
-          padding-left: 10px;
-          color: var(--secondary-text-color);
-          align-items: center;
+        .att-item {
           display: flex;
-          gap: 8px;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          border: 1px solid var(--el-border-color-lighter);
+          border-radius: 8px;
+          background: var(--el-bg-color);
+          width: 260px;
           cursor: pointer;
-          a {
-            color: var(--secondary-text-color);
-            align-items: center;
+          transition: background 0.15s;
+
+          &:hover {
+            background: var(--el-fill-color-light);
+          }
+
+          .att-icon-wrapper {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--el-color-danger-light-9);
+            color: var(--el-color-danger);
+          }
+
+          .att-details {
+            flex: 1;
+            min-width: 0;
+
+            .att-name {
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--el-text-color-primary);
+              margin: 0 0 2px 0;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+
+            .att-size {
+              font-size: 12px;
+              color: var(--el-text-color-secondary);
+              margin: 0;
+            }
+          }
+
+          .opt-icon {
+            display: flex;
+            gap: 8px;
+            color: var(--el-text-color-secondary);
+            
+            a {
+              color: inherit;
+              display: flex;
+              align-items: center;
+            }
           }
         }
       }
     }
 
-    .email-info {
+    /* Inline Reply Box */
+    .inline-reply {
+      margin-top: 32px;
 
-      border-bottom: 1px solid var(--light-border-color);
-      margin-bottom: 20px;
-      padding-bottom: 8px;
-      @media (max-width: 1024px) {
-        margin-bottom: 15px;
-      }
-      .date {
-        color: var(--regular-text-color);
-        margin-bottom: 6px;
-      }
+      .reply-box {
+        border: 1px solid var(--el-border-color-lighter);
+        border-radius: 12px;
+        padding: 16px;
+        background: var(--el-bg-color);
+        cursor: text;
+        transition: border-color 0.15s;
 
-      .email-msg {
-        max-width: 400px;
-        width: fit-content;
-        margin-bottom: 15px;
-      }
+        &:hover {
+          border-color: var(--el-color-primary);
+        }
 
-      .send {
-        display: flex;
-        margin-bottom: 6px;
-
-        .send-name {
-          color: var(--regular-text-color);
+        .reply-header {
           display: flex;
-          flex-wrap: wrap;
+          align-items: center;
+          gap: 12px;
+          color: var(--el-text-color-regular);
+          font-size: 14px;
         }
-
-        .send-name-title {
-          padding-right: 5px;
-        }
-      }
-
-      .receive {
-        margin-bottom: 6px;
-        display: flex;
-        .receive-email {
-          max-width: 700px;
-          word-break: break-word;
-        }
-        span:nth-child(2) {
-          color: var(--regular-text-color);
-        }
-      }
-
-      .send-source {
-        white-space: nowrap;
-        font-weight: bold;
-        padding-right: 10px;
-      }
-
-      .source {
-        white-space: nowrap;
-        font-weight: bold;
-        padding-right: 10px;
       }
     }
   }
@@ -409,20 +622,10 @@ const handleDelete = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--message-block-color); /* 半透明黑色蒙层 */
-  pointer-events: none; /* 不影响点击 */
+  background: var(--message-block-color);
+  pointer-events: none;
 }
 
-.email-text {
-  font-family: inherit;
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
-
-.bottom-distance {
-  margin-bottom: 30px;
-}
 
 
 </style>

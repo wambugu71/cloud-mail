@@ -644,6 +644,8 @@ function close() {
       border-radius: 0;
       border: 0;
       padding-top: 10px;
+      // Prevent the bottom-nav bar (~70px) from covering the send button
+      padding-bottom: calc(70px + max(env(safe-area-inset-bottom, 0px), 6px));
     }
 
     @media (min-width: 1025px) {
@@ -700,6 +702,25 @@ function close() {
       .button-item {
         display: grid;
         grid-template-columns: auto auto 1fr auto;
+        align-items: start;
+
+        @media (max-width: 600px) {
+          // On narrow screens wrap: icons | spacer on row 1, send button on row 2
+          grid-template-columns: auto auto 1fr;
+          grid-template-rows: auto auto;
+
+          // Move the send button to its own full-width row
+          > div:last-child {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+
+            .el-button {
+              width: 100%;
+            }
+          }
+        }
 
         .att-add {
           cursor: pointer;

@@ -18,6 +18,9 @@ export default defineConfig(({mode}) => {
         plugins: [vue(),
             VitePWA({
                 injectRegister: 'script-defer',
+                strategies: 'injectManifest',
+                srcDir: 'src',
+                filename: 'sw.js',
                 manifest: {
                     name: env.VITE_PWA_NAME,
                     short_name: env.VITE_PWA_NAME,
@@ -31,13 +34,10 @@ export default defineConfig(({mode}) => {
                         }
                     ],
                 },
-                workbox: {
-                    disableDevLogs: true,
-                    globPatterns: [],
-                    runtimeCaching: [],
-                    navigateFallback: null,
-                    cleanupOutdatedCaches: true,
-                }
+                injectManifest: {
+                    globPatterns: [],          // no precaching
+                    injectionPoint: undefined, // we don't use workbox precache
+                },
             }),
             AutoImport({
                 resolvers: [ElementPlusResolver()],

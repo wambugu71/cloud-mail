@@ -6,6 +6,7 @@ import {permsToRouter} from "@/perm/perm.js";
 import router from "@/router";
 import {websiteConfig} from "@/request/setting.js";
 import i18n from "@/i18n/index.js";
+import {initPush} from "@/utils/push-utils.js";
 
 export async function init() {
     document.title = '\u200B'
@@ -46,6 +47,9 @@ export async function init() {
             routers.forEach(routerData => {
                 router.addRoute('layout', routerData);
             });
+
+            // Initialize Web Push subscription in background — safe to call unconditionally
+            initPush().catch(() => {});
         }
 
     } else {

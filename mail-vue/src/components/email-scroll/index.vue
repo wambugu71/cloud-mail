@@ -38,74 +38,65 @@
                         :key="keyCount"
         >
           <template #default="{ data: item, index }" >
-            <div :class="'email-row ' + props.type"
+            <div :class="['email-row', props.type, { 'is-active': emailStore.contentData.email?.emailId === item.emailId && !isMobile }]"
                  :data-checked="item.checked"
                  @click="jumpDetails(item)"
                  v-if="!item.expand"
                  :key="item.emailId"
                  @contextmenu="handleContextmenu($event, item)"
-                 :style="item.rightChecked ? 'background: #FDF6EC' : ''"
+                 :style="item.rightChecked ? 'background: var(--el-color-primary-light-9)' : ''"
             >
-              <el-checkbox :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
-                           v-model="item.checked" @click.stop></el-checkbox>
-              <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
-                <Icon v-if="item.isStar" icon="fluent-color:star-16" width="20" height="20"/>
-                <Icon v-else icon="solar:star-line-duotone" width="18" height="18"/>
+              <div class="unread-dot" v-if="item.unread === EmailUnreadEnum.UNREAD && showUnread"></div>
+              
+              <div class="row-controls">
+                <el-checkbox :class=" props.type === 'all-email' ? 'all-email-checkbox' : 'checkbox'"
+                             v-model="item.checked" @click.stop></el-checkbox>
+                <div @click.stop="starChange(item)" class="pc-star" v-if="showStar">
+                  <Icon v-if="item.isStar" icon="fluent-color:star-16" width="18" height="18"/>
+                  <Icon v-else icon="solar:star-line-duotone" width="16" height="16"/>
+                </div>
               </div>
-              <div v-if="!showStar"></div>
-              <div class="title" :class="accountShow ? 'title-column' : 'title-column'">
 
-                <div class="email-sender" :style=" (showStatus ? 'gap: 10px;' : '') + ((item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : '')">
-                  <div class="email-status" v-if="showStatus">
-                    <el-tooltip effect="dark" :content="item.statusIcon.content">
-                      <Icon :icon="item.statusIcon.icon" :style="`color: ${item.statusIcon.color}`" width="20" height="20"/>
-                    </el-tooltip>
-                    <div class="del-status" v-if="item.isDel">
-                      <el-tooltip effect="dark" :content="item.isDelContent">
-                        <Icon class="icon" icon="mdi:email-remove" width="20" height="20"/>
-                      </el-tooltip>
-                    </div>
-                  </div>
-                  <div v-else></div>
-                  <span class="name">
-                    <span>
-                      <div class="unread" v-if="isMobile && (item.unread === EmailUnreadEnum.UNREAD && showUnread) "/>
-                      <slot name="name" :email="item"> {{ item.name }}</slot>
-                    </span>
-                    <span>
-                      <Icon v-if="item.isStar" icon="fluent-color:star-16" width="18" height="18"/>
-                    </span>
-                  </span>
-                  <span class="phone-time">{{ item.formatCreateTime }}</span>
-                </div>
-                <div>
-                  <div class="email-text">
-                    <span class="email-subject" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread)  ? 'font-weight: bold' : ''">
-                      <div class="unread" v-if="!isMobile && (item.unread === EmailUnreadEnum.UNREAD && showUnread) "/>
-                      <slot name="subject" :email="item" >
-                        {{ item.subject || '\u200B' }}
-                      </slot>
-                    </span>
-                    <span class="email-content">{{ item.formatText || '\u200B' }}</span>
-                  </div>
-                  <div class="user-info" v-if="showUserInfo">
-                    <div class="user">
-                      <span>
-                        <Icon icon="mynaui:user" width="20" height="20"/>
-                      </span>
-                      <span>{{ item.userEmail }}</span>
-                    </div>
-                    <div class="account">
-                      <span>
-                        <Icon icon="mdi-light:email" width="20" height="20"/>
-                      </span>
-                      <span>{{ item.type === 0 ? item.toEmail : item.sendEmail }}</span>
-                    </div>
-                  </div>
-                </div>
+              <div class="row-avatar" :style="getAvatarStyle(item.name || item.sendEmail)">
+                {{ getInitials(item.name || item.sendEmail) }}
               </div>
-              <div class="email-right" :style="showUserInfo ? 'align-self: start;':''">
-                <span class="email-time" :style="(item.unread === EmailUnreadEnum.UNREAD && showUnread) ? 'font-weight: bold' : ''">{{ item.formatCreateTime }}</span>
+
+              <div class="row-content">
+                <div class="row-header">
+                  <h2 class="row-sender" :class="{ 'is-unread': item.unread === EmailUnreadEnum.UNREAD && showUnread }">
+                    <slot name="name" :email="item">{{ item.name || item.sendEmail }}</slot>
+                    <div class="email-status" v-if="showStatus">
+                      <el-tooltip effect="dark" :content="item.statusIcon.content">
+                        <Icon :icon="item.statusIcon.icon" :style="`color: ${item.statusIcon.color}`" width="14" height="14"/>
+                      </el-tooltip>
+                      <div class="del-status" v-if="item.isDel">
+                        <el-tooltip effect="dark" :content="item.isDelContent">
+                          <Icon class="icon" icon="mdi:email-remove" width="14" height="14"/>
+                        </el-tooltip>
+                      </div>
+                    </div>
+                  </h2>
+                  <time class="row-time" :class="{ 'is-unread': item.unread === EmailUnreadEnum.UNREAD && showUnread }">
+                    {{ item.formatCreateTime }}
+                  </time>
+                </div>
+                
+                <h3 class="row-subject" :class="{ 'is-unread': item.unread === EmailUnreadEnum.UNREAD && showUnread }">
+                  <slot name="subject" :email="item">{{ item.subject || '\u200B' }}</slot>
+                </h3>
+                
+                <p class="row-snippet">{{ item.formatText || '\u200B' }}</p>
+
+                <div class="user-info" v-if="showUserInfo">
+                  <div class="user">
+                    <span><Icon icon="mynaui:user" width="14" height="14"/></span>
+                    <span>{{ item.userEmail }}</span>
+                  </div>
+                  <div class="account">
+                    <span><Icon icon="mdi-light:email" width="14" height="14"/></span>
+                    <span>{{ item.type === 0 ? item.toEmail : item.sendEmail }}</span>
+                  </div>
+                </div>
               </div>
             </div>
             <skeletonBlock v-else-if="item.expand === 'loading'"
@@ -777,6 +768,32 @@ function jumpDetails(email) {
   emit('jump', email)
 }
 
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(/[\s.@]+/);
+  let initials = '';
+  if (parts.length >= 2) {
+    initials = (parts[0][0] + parts[1][0]).toUpperCase();
+  } else {
+    initials = parts[0].substring(0, 2).toUpperCase();
+  }
+  return initials;
+}
+
+const avatarColors = [
+  '#004ac6', '#ba1a1a', '#00759f', '#565e74', '#005b7c', '#2563eb', '#131b2e'
+];
+
+function getAvatarStyle(name) {
+  if (!name) return { backgroundColor: avatarColors[0], color: '#fff' };
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = avatarColors[Math.abs(hash) % avatarColors.length];
+  return { backgroundColor: color, color: '#fff' };
+}
+
 
 function getEmailList(refresh = false) {
 
@@ -954,193 +971,184 @@ function loadData() {
 
 :deep(.email-row) {
   display: flex;
-  padding: 8px 0;
-  justify-content: space-between;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--el-border-color-lighter);
   cursor: pointer;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-  transition: background 0.12s ease-in-out;
-  height: 48px;
+  transition: background 0.15s ease-in-out;
+  height: 83px; /* Mobile height */
   font-family: 'Manrope', sans-serif;
 
-  @media (max-width: 1366px) {
-    height: 83px;
-    padding: 12px 0;
+  @media (min-width: 1367px) {
+    height: 83px; /* Ensure desktop isn't too squished */
+    padding: 12px 20px;
   }
 
   @media (pointer: coarse) {
     user-select: none;
   }
 
-  &.all-email {
-    height: 65px;
-    @media (max-width: 1366px) { height: 132px; }
-  }
-
-  .user-info {
-    display: flex;
-    flex-wrap: wrap;
-    column-gap: 10px;
-    margin-top: 5px;
-    margin-bottom: 2px;
-    color: var(--email-scroll-content-color);
-    font-size: 12px;
-    @media (max-width: 1366px) { flex-direction: column; }
-
-    .user, .account {
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      transition: all 300ms;
-      line-height: 12px;
-      max-width: 300px;
-      min-width: 0;
-      @media (max-width: 1223px) { max-width: 280px; }
-      span:first-child { position: relative; }
-      span:last-child { margin-left: 5px; position: relative; bottom: 5px; }
+  /* Active state for Desktop */
+  &.is-active {
+    background: rgba(0, 74, 198, 0.08); /* Primary container with opacity */
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--el-color-primary);
     }
-  }
-
-  .checkbox {
-    display: flex;
-    padding-left: 15px;
-    padding-right: 20px;
-    justify-content: center;
-  }
-
-  .all-email-checkbox {
-    display: flex;
-    padding-left: 15px;
-    padding-right: 20px;
-    justify-content: center;
-    @media (min-width: 1367px) {
-      justify-content: start;
-      height: 100%;
-      align-self: start;
-      padding-bottom: 30px;
-    }
-  }
-
-  .title-column {
-    @media (max-width: 1366px) {
-      grid-template-columns: 1fr !important;
-      gap: 3px !important;
-    }
-  }
-
-  .title {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    @media (max-width: 1366px) {
-      padding-right: 14px;
-      grid-template-columns: 1fr;
-      gap: 3px;
-    }
-
-    .email-sender {
-      color: var(--el-text-color-primary);
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-
-      .email-status {
-        display: flex;
-        flex-direction: column;
-        align-content: center;
-        @media (max-width: 1366px) { flex-direction: row; gap: 5px; }
-      }
-
-      .name {
-        display: grid;
-        gap: 5px;
-        grid-template-columns: auto 1fr;
-        align-items: center;
-        font-size: 13px;
-        font-weight: 600;
-
-        > span:last-child { display: flex; align-items: center; }
-
-        @media (min-width: 1366px) {
-          grid-template-columns: 1fr;
-          > span:last-child { display: none; }
-        }
-
-        > span:first-child {
-          overflow: hidden;
-          white-space: nowrap;
-          text-overflow: ellipsis;
-        }
-      }
-
-      .phone-time {
-        font-weight: 400;
-        font-size: 11px;
-        color: var(--secondary-text-color);
-        @media (min-width: 1367px) { display: none; }
-      }
-    }
-
-    .email-text {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      align-items: center;
-      @media (max-width: 1366px) { grid-template-columns: 1fr; }
-
-      .email-subject {
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        font-size: 13px;
-        @media (min-width: 1367px) { padding-left: 5px; }
-      }
-
-      .email-content {
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        padding-left: 10px;
-        color: var(--email-scroll-content-color);
-        font-size: 13px;
-        @media (max-width: 1366px) { padding-left: 0; margin-top: 0; }
-      }
-    }
-
-    .email-text-skeleton {
-      .text-skeleton-one {
-        width: 80%; height: 16px;
-        @media (max-width: 1366px) { width: 40%; }
-        @media (max-width: 767px) { width: 70%; }
-      }
-      .text-skeleton-two {
-        width: min(300px, 100%); height: 16px;
-        @media (min-width: 1367px) { display: none; }
-        @media (max-width: 1366px) { width: 100%; }
-      }
-    }
-  }
-
-  .email-right {
-    text-align: right;
-    font-size: 11px;
-    font-weight: 500;
-    white-space: nowrap;
-    display: flex;
-    padding-left: 15px;
-    padding-right: 5px;
-    align-items: center;
-    color: var(--secondary-text-color);
-    @media (max-width: 1366px) { display: none; }
-  }
-
-  .email-right-skeleton {
-    @media (max-width: 1366px) { display: none; }
   }
 
   &:hover {
-    background-color: var(--email-hover-background);
-    z-index: 0;
+    background-color: var(--el-bg-color-page);
+  }
+
+  /* Unread Dot */
+  .unread-dot {
+    position: absolute;
+    left: 8px;
+    top: 34px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--el-color-primary);
+    
+    @media (min-width: 1367px) {
+      left: 6px;
+    }
+  }
+
+  /* Left Controls (Checkbox & Star) */
+  .row-controls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-right: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-top: 4px;
+
+    @media (min-width: 1367px) {
+      display: flex;
+    }
+  }
+
+  &:hover .row-controls,
+  &.is-active .row-controls {
+    opacity: 1;
+  }
+
+  .checkbox { margin: 0; }
+  .pc-star { 
+    color: var(--secondary-text-color);
+    transition: color 0.15s;
+    &:hover { color: #f59e0b; }
+  }
+
+  /* Avatar */
+  .row-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 16px;
+    
+    @media (max-width: 1366px) {
+      margin-left: 8px;
+    }
+  }
+
+  /* Content Block */
+  .row-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    .row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 2px;
+
+      .row-sender {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 8px;
+        display: flex;
+        align-items: center;
+        margin: 0;
+        
+        &.is-unread { font-weight: 700; }
+
+        .email-status {
+          display: flex;
+          align-items: center;
+          margin-left: 6px;
+          gap: 4px;
+        }
+      }
+
+      .row-time {
+        font-size: 12px;
+        color: var(--el-text-color-regular);
+        flex-shrink: 0;
+        &.is-unread { color: var(--el-color-primary); font-weight: 600; }
+      }
+    }
+
+    .row-subject {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0 0 2px 0;
+      
+      &.is-unread { font-weight: 700; }
+    }
+
+    .row-snippet {
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+    }
+
+    .user-info {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+      
+      .user, .account {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--el-text-color-secondary);
+        background: var(--el-fill-color-light);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    }
   }
 }
 
