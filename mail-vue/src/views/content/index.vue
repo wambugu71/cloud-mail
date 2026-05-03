@@ -130,7 +130,7 @@
 </template>
 <script setup>
 import ShadowHtml from '@/components/shadow-html/index.vue'
-import {reactive, ref, watch, onMounted, onUnmounted} from "vue";
+import {reactive, ref, computed, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {emailDelete, emailRead} from "@/request/email.js";
@@ -153,7 +153,8 @@ const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
 const router = useRouter()
-const email = emailStore.contentData.email
+// computed so the view always reflects whatever email is selected in the store
+const email = computed(() => emailStore.contentData.email)
 const showPreview = ref(false)
 const srcList = reactive([])
 
@@ -162,9 +163,9 @@ const handleResize = () => { isMobile.value = window.innerWidth < 1024; };
 
 onMounted(() => {
   window.addEventListener('resize', handleResize);
-  if (emailStore.contentData.showUnread && email.unread === EmailUnreadEnum.UNREAD) {
-    email.unread = EmailUnreadEnum.READ;
-    emailRead([email.emailId]);
+  if (emailStore.contentData.showUnread && email.value.unread === EmailUnreadEnum.UNREAD) {
+    email.value.unread = EmailUnreadEnum.READ;
+    emailRead([email.value.emailId]);
   }
 })
 
@@ -199,29 +200,17 @@ function getAvatarStyle(name) {
   return { backgroundColor: color, color: '#fff' };
 }
 
+
 const { t } = useI18n()
-watch(() => accountStore.currentAccountId, () => {
-  handleBack()
-})
-
-onMounted(() => {
-  if (emailStore.contentData.showUnread && email.unread === EmailUnreadEnum.UNREAD) {
-    email.unread = EmailUnreadEnum.READ;
-    emailRead([email.emailId]);
-  }
-})
-
-onUnmounted(() => {
-  emailStore.contentData.showUnread = false;
-})
 
 function openReply() {
-  uiStore.writerRef.openReply(email)
+  uiStore.writerRef.openReply(email.value)
 }
 
 function openForward() {
-  uiStore.writerRef.openForward(email)
+  uiStore.writerRef.openForward(email.value)
 }
+
 
 function toMessage(message) {
   return  message ? JSON.parse(message).message : '';
@@ -251,27 +240,27 @@ function formateReceive(recipient) {
 }
 
 function changeStar() {
-  if (email.isStar) {
-    email.isStar = 0;
-    starCancel(email.emailId).then(() => {
-      email.isStar = 0;
-      emailStore.cancelStarEmailId = email.emailId
+  if (email.value.isStar) {
+    email.value.isStar = 0;
+    starCancel(email.value.emailId).then(() => {
+      email.value.isStar = 0;
+      emailStore.cancelStarEmailId = email.value.emailId
       setTimeout(() => emailStore.cancelStarEmailId = 0)
-      emailStore.starScroll?.deleteEmail([email.emailId])
+      emailStore.starScroll?.deleteEmail([email.value.emailId])
     }).catch((e) => {
       console.error(e)
-      email.isStar = 1;
+      email.value.isStar = 1;
     })
   } else {
-    email.isStar = 1;
-    starAdd(email.emailId).then(() => {
-      email.isStar = 1;
-      emailStore.addStarEmailId = email.emailId
+    email.value.isStar = 1;
+    starAdd(email.value.emailId).then(() => {
+      email.value.isStar = 1;
+      emailStore.addStarEmailId = email.value.emailId
       setTimeout(() => emailStore.addStarEmailId = 0)
-      emailStore.starScroll?.addItem(email)
+      emailStore.starScroll?.addItem(email.value)
     }).catch((e) => {
       console.error(e)
-      email.isStar = 0;
+      email.value.isStar = 0;
     })
   }
 }
@@ -287,29 +276,30 @@ const handleDelete = () => {
     type: 'warning'
   }).then(() => {
     if (emailStore.contentData.delType === 'logic') {
-      emailDelete(email.emailId).then(() => {
+      emailDelete(email.value.emailId).then(() => {
         ElMessage({
           message: t('delSuccessMsg'),
           type: 'success',
           plain: true,
         })
-        emailStore.deleteIds = [email.emailId]
+        emailStore.deleteIds = [email.value.emailId]
       })
     } else  {
 
-      allEmailDelete(email.emailId).then(() => {
+      allEmailDelete(email.value.emailId).then(() => {
         ElMessage({
           message: t('delSuccessMsg'),
           type: 'success',
           plain: true,
         })
-        emailStore.deleteIds = [email.emailId]
+        emailStore.deleteIds = [email.value.emailId]
       })
     }
 
     router.back()
   })
 }
+
 </script>
 <style scoped lang="scss">
 .box {
