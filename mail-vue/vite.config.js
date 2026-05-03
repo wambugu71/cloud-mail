@@ -24,13 +24,25 @@ export default defineConfig(({mode}) => {
                 manifest: {
                     name: env.VITE_PWA_NAME,
                     short_name: env.VITE_PWA_NAME,
+                    description: 'Cloud Mail — your self-hosted email client',
+                    start_url: '/',
+                    scope: '/',
+                    display: 'standalone',
+                    orientation: 'portrait',
                     background_color: '#FFFFFF',
-                    theme_color: '#FFFFFF',
+                    theme_color: '#004ac6',
                     icons: [
                         {
                             src: 'mail-pwa.png',
                             sizes: '192x192',
                             type: 'image/png',
+                            purpose: 'any maskable',
+                        },
+                        {
+                            src: 'mail-pwa-512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'any maskable',
                         }
                     ],
                 },
