@@ -327,6 +327,14 @@ const zh = {
     userEmail: '用户邮箱',
     emailSignature: '邮件签名',
     emailSignatureDesc: '自动追加到所有发出邮件的末尾',
-    signatureLengthLimit: '签名不能超过5000个字符'
+    signatureLengthLimit: '签名不能超过5000个字符',
+    // 追踪器保护
+    trackersBlocked: '已拦截 {count} 个追踪器',
+    trackerBlocked: '已拦截 1 个追踪器',
+    loadImages: '加载图片',
+    imagesBlocked: '为保护您的隐私，已屏蔽外部图片。',
+    trackerProtection: '追踪保护',
+    showImages: '显示图片',
+    remoteImagesHidden: '外部图片已隐藏',
 }
 export default zh

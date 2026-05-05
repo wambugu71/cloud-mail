@@ -327,7 +327,15 @@ const en = {
     userEmail: 'Email Address',
     emailSignature: 'Email Signature',
     emailSignatureDesc: 'Automatically appended to all outgoing emails',
-    signatureLengthLimit: 'Signature cannot exceed 5000 characters'
+    signatureLengthLimit: 'Signature cannot exceed 5000 characters',
+    // Tracker protection
+    trackersBlocked: '{count} tracker(s) blocked',
+    trackerBlocked: '1 tracker blocked',
+    loadImages: 'Load images',
+    imagesBlocked: 'Remote images are blocked to protect your privacy.',
+    trackerProtection: 'Tracker Protection',
+    showImages: 'Show images',
+    remoteImagesHidden: 'Remote images hidden',
 }
 
 export default en

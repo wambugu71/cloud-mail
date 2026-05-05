@@ -327,7 +327,15 @@ const sw = {
     userEmail: 'Anwani ya Barua Pepe',
     emailSignature: 'Sahihi ya Barua Pepe',
     emailSignatureDesc: 'Inaongezwa kiotomatiki kwa barua pepe zote zinazotumwa',
-    signatureLengthLimit: 'Sahihi haiwezi kuzidi herufi 5000'
+    signatureLengthLimit: 'Sahihi haiwezi kuzidi herufi 5000',
+    // Ulinzi wa vifuatiliaji
+    trackersBlocked: 'Vifuatiliaji {count} vimezuiliwa',
+    trackerBlocked: 'Kifuatiliaji 1 kimezuiliwa',
+    loadImages: 'Pakia picha',
+    imagesBlocked: 'Picha za nje zimezuiliwa kulinda faragha yako.',
+    trackerProtection: 'Ulinzi wa Ufuatiliaji',
+    showImages: 'Onyesha picha',
+    remoteImagesHidden: 'Picha za nje zimefichwa',
 }
 
 export default sw;

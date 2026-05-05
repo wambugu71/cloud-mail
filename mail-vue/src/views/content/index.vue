@@ -30,6 +30,17 @@
       </div>
 
       <div class="right-actions">
+        <!-- Tracker shield badge -->
+        <button
+          v-if="totalBlockedCount > 0"
+          class="action-btn tracker-badge"
+          :title="$t('trackerProtection')"
+          @click="imagesAllowed = !imagesAllowed"
+        >
+          <Icon icon="material-symbols:security" width="18" height="18" />
+          <span class="tracker-count">{{ totalBlockedCount }}</span>
+        </button>
+
         <button v-if="emailStore.contentData.showReply" v-perm="'email:send'" class="action-btn" @click="openReply" :title="$t('reply') || 'Reply'">
           <Icon icon="material-symbols:reply" width="20" height="20" />
         </button>
@@ -78,8 +89,14 @@
 
           <!-- Email Body -->
           <el-scrollbar class="htm-scrollbar" :class="email.attList.length === 0 ? 'bottom-distance' : ''">
-            <ShadowHtml class="shadow-html" :html="formatImage(email.content)" v-if="email.content" />
-            <pre v-else class="email-text" >{{email.text}}</pre>
+            <ShadowHtml
+              v-if="email.content"
+              class="shadow-html"
+              :html="formatImage(email.content)"
+              v-model:imagesAllowed="imagesAllowed"
+              @remoteImagesFound="onRemoteImagesFound"
+            />
+            <pre v-else class="email-text">{{email.text}}</pre>
           </el-scrollbar>
 
           <!-- Attachments -->
@@ -161,12 +178,44 @@ const srcList = reactive([])
 const isMobile = ref(window.innerWidth < 1024);
 const handleResize = () => { isMobile.value = window.innerWidth < 1024; };
 
+/** Whether the user has granted permission to load remote images for this email */
+const imagesAllowed = ref(false)
+/** Count of remote images found by the client-side shadow renderer */
+const clientBlockedCount = ref(0)
+/** Count of trackers neutralised server-side (stored in email.message JSON) */
+const serverBlockedCount = computed(() => {
+  if (!email.value?.message) return 0
+  // message field stores error JSON for bounced/failed emails — only parse tracker data
+  // for normal received emails (status 1 = received, 0 = saving)
+  const status = email.value?.status
+  if (status === 3 || status === 4 || status === 5) return 0
+  try {
+    const parsed = JSON.parse(email.value.message)
+    return parsed.trackerCount || 0
+  } catch {
+    return 0
+  }
+})
+const totalBlockedCount = computed(() =>
+  Math.max(serverBlockedCount.value, clientBlockedCount.value)
+)
+
+function onRemoteImagesFound(count) {
+  clientBlockedCount.value = count
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   if (emailStore.contentData.showUnread && email.value.unread === EmailUnreadEnum.UNREAD) {
     email.value.unread = EmailUnreadEnum.READ;
     emailRead([email.value.emailId]);
   }
+})
+
+// Reset image / tracker state whenever a different email is opened
+watch(() => email.value?.emailId, () => {
+  imagesAllowed.value = false
+  clientBlockedCount.value = 0
 })
 
 onUnmounted(() => {
@@ -352,7 +401,37 @@ const handleDelete = () => {
       background: var(--el-color-danger-light-9);
       color: var(--el-color-danger);
     }
+
+    // Tracker shield badge — wider pill to fit the count number
+    &.tracker-badge {
+      width: auto;
+      border-radius: 20px;
+      padding: 0 10px;
+      gap: 4px;
+      color: #1e6fa8;
+      background: #dbeafe;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid #bfdbfe;
+      animation: tracker-pulse 2s ease-in-out 1;
+
+      &:hover {
+        background: #bfdbfe;
+        color: #1d4ed8;
+      }
+
+      .tracker-count {
+        font-variant-numeric: tabular-nums;
+      }
+    }
   }
+
+  @keyframes tracker-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+    50%  { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  }
+
 
   .divider {
     width: 1px;

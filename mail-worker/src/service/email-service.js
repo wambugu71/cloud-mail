@@ -22,6 +22,7 @@ import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
 import pushService from './push-service';
+import trackerUtils from '../utils/tracker-utils';
 
 const emailService = {
 
@@ -171,7 +172,18 @@ const emailService = {
 	},
 
 	receive(c, params, cidAttList, r2domain) {
-		params.content = this.imgReplace(params.content, cidAttList, r2domain)
+		// Replace CID attachment references with stored URLs first
+		params.content = this.imgReplace(params.content, cidAttList, r2domain);
+
+		// Sanitize tracking pixels / known tracker images before storing
+		const { html: sanitizedHtml, trackerCount, trackerDomains } = trackerUtils.sanitize(params.content);
+		params.content = sanitizedHtml;
+
+		// Record tracker metadata in the message field (only when trackers found and not already an error)
+		if (trackerCount > 0 && !params.message) {
+			params.message = JSON.stringify({ trackerCount, trackerDomains });
+		}
+
 		return orm(c).insert(email).values({ ...params }).returning().get();
 	},
 
