@@ -11,6 +11,9 @@ export const useUiStore = defineStore('ui', {
         previewData: {},
         key: 0,
         dark: false,
+        searchQuery: '',
+        searchType: 'all',
+        searchTrigger: 0,
         asideCount: {
             email: 0,
             send: 0,

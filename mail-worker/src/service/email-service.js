@@ -27,7 +27,7 @@ const emailService = {
 
 	async list(c, params, userId) {
 
-		let { emailId, type, accountId, size, timeSort, allReceive } = params;
+		let { emailId, type, accountId, size, timeSort, allReceive, search, searchType } = params;
 
 		size = Number(size);
 		emailId = Number(emailId);
@@ -54,6 +54,30 @@ const emailService = {
 			allReceive = accountRow.allReceive;
 		}
 
+		// Build search conditions
+		const searchConditions = [];
+		if (search && search.trim()) {
+			const q = search.trim();
+			if (!searchType || searchType === 'all') {
+				searchConditions.push(
+					or(
+						sql`${email.name} COLLATE NOCASE LIKE ${'%' + q + '%'}`,
+						sql`${email.subject} COLLATE NOCASE LIKE ${'%' + q + '%'}`,
+						sql`${email.sendEmail} COLLATE NOCASE LIKE ${'%' + q + '%'}`,
+						sql`${email.toEmail} COLLATE NOCASE LIKE ${'%' + q + '%'}`,
+					)
+				);
+			} else if (searchType === 'name') {
+				searchConditions.push(sql`${email.name} COLLATE NOCASE LIKE ${'%' + q + '%'}`);
+			} else if (searchType === 'subject') {
+				searchConditions.push(sql`${email.subject} COLLATE NOCASE LIKE ${'%' + q + '%'}`);
+			} else if (searchType === 'from') {
+				searchConditions.push(sql`${email.sendEmail} COLLATE NOCASE LIKE ${'%' + q + '%'}`);
+			} else if (searchType === 'to') {
+				searchConditions.push(sql`${email.toEmail} COLLATE NOCASE LIKE ${'%' + q + '%'}`);
+			}
+		}
+
 		const query = orm(c)
 			.select({
 				...email,
@@ -77,7 +101,8 @@ const emailService = {
 					timeSort ? gt(email.emailId, emailId) : lt(email.emailId, emailId),
 					eq(email.type, type),
 					eq(email.isDel, isDel.NORMAL),
-					eq(account.isDel, isDel.NORMAL)
+					eq(account.isDel, isDel.NORMAL),
+					...searchConditions
 				)
 			);
 
@@ -100,7 +125,8 @@ const emailService = {
 					eq(email.userId, userId),
 					eq(email.type, type),
 					eq(email.isDel, isDel.NORMAL),
-					eq(account.isDel, isDel.NORMAL)
+					eq(account.isDel, isDel.NORMAL),
+					...searchConditions
 				)
 		).get();
 

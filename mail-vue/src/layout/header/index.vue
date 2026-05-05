@@ -1,5 +1,4 @@
 <template>
-  <!-- Desktop top bar -->
   <div class="top-bar">
     <!-- Left: hamburger + page title -->
     <div class="top-bar-left">
@@ -11,8 +10,33 @@
 
     <!-- Center: search (desktop) -->
     <div class="search-bar" v-if="!isMobile">
-      <Icon icon="material-symbols:search-rounded" width="18" height="18" class="search-icon" />
-      <input class="search-input" :placeholder="$t('searchByContent')" type="text" />
+      <!-- Search type dropdown -->
+      <div class="search-type-wrap" @click.stop="toggleSearchType">
+        <Icon icon="material-symbols:search-rounded" width="18" height="18" class="search-icon" />
+        <span class="search-type-label">{{ searchTypeLabel }}</span>
+        <Icon icon="mingcute:down-small-fill" width="14" height="14" class="search-type-chevron" />
+        <div class="search-type-menu" v-show="searchTypeOpen">
+          <div v-for="opt in searchTypes" :key="opt.value"
+               :class="['search-type-item', { active: uiStore.searchType === opt.value }]"
+               @click.stop="setSearchType(opt.value)">
+            {{ opt.label }}
+          </div>
+        </div>
+      </div>
+      <input
+        class="search-input"
+        v-model="uiStore.searchQuery"
+        :placeholder="$t('searchByContent')"
+        type="text"
+        @keyup.enter="doSearch"
+        @keyup.esc="clearSearch"
+      />
+      <button v-if="uiStore.searchQuery" class="search-clear-btn" @click="clearSearch" aria-label="Clear search">
+        <Icon icon="material-symbols:close-rounded" width="16" height="16" />
+      </button>
+      <button class="search-go-btn" @click="doSearch" aria-label="Search">
+        <Icon icon="iconoir:search" width="16" height="16" />
+      </button>
     </div>
 
     <!-- Right: actions -->
@@ -74,7 +98,20 @@
   <div class="mobile-search" v-if="isMobile">
     <div class="mobile-search-inner">
       <Icon icon="material-symbols:search-rounded" width="18" height="18" class="mobile-search-icon" />
-      <input class="mobile-search-input" :placeholder="$t('searchByContent')" type="text" />
+      <input
+        class="mobile-search-input"
+        v-model="uiStore.searchQuery"
+        :placeholder="$t('searchByContent')"
+        type="text"
+        @keyup.enter="doSearch"
+        @keyup.esc="clearSearch"
+      />
+      <button v-if="uiStore.searchQuery" class="mobile-search-clear" @click="clearSearch">
+        <Icon icon="material-symbols:close-rounded" width="16" height="16" />
+      </button>
+      <button class="mobile-search-go" @click="doSearch">
+        <Icon icon="iconoir:search" width="16" height="16" />
+      </button>
     </div>
   </div>
 </template>
@@ -101,10 +138,59 @@ const logoutLoading = ref(false);
 const userInfoShow = ref(false);
 const userinfoRef = ref({});
 const isMobile = ref(window.innerWidth < 1025);
+const searchTypeOpen = ref(false);
+
+const searchTypes = computed(() => [
+  { value: 'all',     label: t('all') },
+  { value: 'name',    label: t('sender') },
+  { value: 'subject', label: t('subject') },
+  { value: 'from',    label: t('from') },
+]);
+
+const searchTypeLabel = computed(() => {
+  return searchTypes.value.find(o => o.value === uiStore.searchType)?.label || t('all');
+});
+
+function toggleSearchType() {
+  searchTypeOpen.value = !searchTypeOpen.value;
+}
+
+function setSearchType(val) {
+  uiStore.searchType = val;
+  searchTypeOpen.value = false;
+}
+
+function doSearch() {
+  searchTypeOpen.value = false;
+  // Navigate to inbox if not already there
+  if (route.name !== 'email') {
+    router.push('/inbox');
+  }
+  // Trigger search by bumping the key the email view watches
+  uiStore.searchTrigger = (uiStore.searchTrigger || 0) + 1;
+}
+
+function clearSearch() {
+  uiStore.searchQuery = '';
+  uiStore.searchTrigger = (uiStore.searchTrigger || 0) + 1;
+}
+
+// Close dropdown when clicking outside
+function handleOutsideClick(e) {
+  if (!e.target.closest('.search-type-wrap') && !e.target.closest('.search-type-menu')) {
+    searchTypeOpen.value = false;
+  }
+}
 
 const handleResize = () => { isMobile.value = window.innerWidth < 1025; };
-onMounted(() => window.addEventListener('resize', handleResize));
-onBeforeUnmount(() => window.removeEventListener('resize', handleResize));
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
+  document.addEventListener('click', handleOutsideClick);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize);
+  document.removeEventListener('click', handleOutsideClick);
+});
 
 const accountCount = computed(() => userStore.user.role?.accountCount);
 
@@ -227,16 +313,17 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
 /* ── Search bar (desktop) ────────────────────────────────── */
 .search-bar {
   flex: 1;
-  max-width: 480px;
+  max-width: 520px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   background: var(--base-fill);
   border-radius: 999px;
-  padding: 0 14px;
+  padding: 0 6px 0 4px;
   height: 38px;
   border: 1.5px solid transparent;
   transition: border-color 0.15s, background 0.15s;
+  position: relative;
 
   &:focus-within {
     border-color: var(--el-color-primary);
@@ -259,7 +346,89 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
 
     &::placeholder { color: var(--el-text-color-placeholder); }
   }
+
+  .search-clear-btn,
+  .search-go-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--el-text-color-regular);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+    &:hover {
+      background: var(--base-fill);
+      color: var(--el-color-primary);
+    }
+  }
+
+  .search-go-btn {
+    background: var(--el-color-primary);
+    color: #fff;
+    &:hover { background: var(--el-color-primary-dark-2); color: #fff; }
+  }
 }
+
+/* Search type dropdown trigger */
+.search-type-wrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 8px 0 10px;
+  height: 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.12s;
+  &:hover { background: rgba(0,0,0,0.06); }
+
+  .search-icon { color: var(--el-text-color-placeholder); }
+
+  .search-type-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--el-text-color-secondary);
+    font-family: 'Manrope', sans-serif;
+    white-space: nowrap;
+  }
+
+  .search-type-chevron { color: var(--el-text-color-placeholder); }
+
+  .search-type-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 200;
+    min-width: 130px;
+    padding: 4px;
+    overflow: hidden;
+
+    .search-type-item {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--el-text-color-primary);
+      font-family: 'Manrope', sans-serif;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.1s;
+      &:hover { background: var(--base-fill); }
+      &.active {
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
 
 /* ── Right actions ───────────────────────────────────────── */
 .top-bar-right {
@@ -448,6 +617,27 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
     color: var(--el-text-color-primary);
     font-family: 'Manrope', sans-serif;
     &::placeholder { color: var(--el-text-color-placeholder); }
+  }
+
+  .mobile-search-clear,
+  .mobile-search-go {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+    color: var(--el-text-color-regular);
+    &:hover { background: rgba(0,0,0,0.06); color: var(--el-color-primary); }
+  }
+
+  .mobile-search-go {
+    background: var(--el-color-primary);
+    color: #fff;
+    &:hover { background: var(--el-color-primary-dark-2); color: #fff; }
   }
 }
 </style>

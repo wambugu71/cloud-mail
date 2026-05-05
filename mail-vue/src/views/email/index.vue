@@ -52,7 +52,7 @@ import {defineOptions, onMounted, onBeforeUnmount, reactive, ref, watch} from "v
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
-import { useRoute } from 'vue-router'
+import { useRoute } from 'vue-router';
 
 defineOptions({
   name: 'email'
@@ -80,6 +80,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
 })
+
+// Watch for search trigger from the header
+watch(() => uiStore.searchTrigger, () => {
+  scroll.value.refreshList();
+});
 
 watch(() => accountStore.currentAccountId, () => {
   scroll.value.refreshList();
@@ -167,7 +172,9 @@ function cancelStar(email) {
 function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
   const allReceive = accountStore.currentAccount.allReceive;
-  return emailList(accountId, allReceive, emailId, params.timeSort, size, 0).then(data => {
+  const search = uiStore.searchQuery || undefined;
+  const searchType = search ? (uiStore.searchType || 'all') : undefined;
+  return emailList(accountId, allReceive, emailId, params.timeSort, size, 0, search, searchType).then(data => {
     data.latestEmail.reqAccountId = accountId;
     data.latestEmail.allReceive = allReceive;
     return data;
@@ -175,6 +182,7 @@ function getEmailList(emailId, size) {
 }
 
 </script>
+
 <style scoped lang="scss">
 .email-layout-wrapper {
   display: flex;
