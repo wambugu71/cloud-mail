@@ -50,6 +50,7 @@
             <el-select v-model="locale" placeholder="Select Language" class="w-full">
               <el-option label="English" value="en" />
               <el-option label="中文" value="zh" />
+              <el-option label="Kiswahili" value="sw" />
             </el-select>
           </div>
           <div class="form-group">
