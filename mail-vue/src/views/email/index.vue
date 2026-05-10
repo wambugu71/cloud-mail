@@ -48,7 +48,7 @@ import emailScroll from "@/components/email-scroll/index.vue"
 import ContentIndex from "@/views/content/index.vue"
 import {emailList, emailDelete, emailLatest, emailRead} from "@/request/email.js";
 import {starAdd, starCancel} from "@/request/star.js";
-import {defineOptions, onMounted, onBeforeUnmount, reactive, ref, watch} from "vue";
+import {defineOptions, onMounted, onBeforeUnmount, onUnmounted, reactive, ref, watch} from "vue";
 import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
@@ -75,11 +75,26 @@ onMounted(() => {
   window.addEventListener('resize', handleResize);
   emailStore.emailScroll = scroll;
   latest()
+
+  // Update tab title reactively with unread count
+  updateTabTitle(uiStore.asideCount.email)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
+  document.title = getBaseTitle()
 })
+
+function getBaseTitle() {
+  return document.title.replace(/^\(\d+\)\s*/, '')
+}
+
+function updateTabTitle(count) {
+  const base = getBaseTitle()
+  document.title = count > 0 ? `(${count}) ${base}` : base
+}
+
+watch(() => uiStore.asideCount.email, updateTabTitle)
 
 // Watch for search trigger from the header
 watch(() => uiStore.searchTrigger, () => {

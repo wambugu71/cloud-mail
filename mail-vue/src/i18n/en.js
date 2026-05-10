@@ -336,6 +336,32 @@ const en = {
     trackerProtection: 'Tracker Protection',
     showImages: 'Show images',
     remoteImagesHidden: 'Remote images hidden',
+    // Density mode
+    density: 'Display Density',
+    compact: 'Compact',
+    comfortable: 'Comfortable',
+    spacious: 'Spacious',
+    // Quick reply templates
+    quickReplies: 'Quick Reply Templates',
+    quickRepliesDesc: 'One-click text snippets for your compose window',
+    addTemplate: 'Add Template',
+    templateName: 'Label',
+    templateText: 'Text',
+    deleteTemplate: 'Delete',
+    insertTemplate: 'Insert',
+    emptyTemplateName: 'Template label cannot be empty',
+    emptyTemplateText: 'Template text cannot be empty',
+    templates: 'Templates',
+    // Keyboard shortcuts
+    keyboardShortcuts: 'Keyboard Shortcuts',
+    shortcutCompose: 'Compose new email',
+    shortcutReply: 'Reply to open email',
+    shortcutHelp: 'Show shortcuts help',
+    // Copy sender email
+    copyEmail: 'Copy email address',
+    copiedEmail: 'Email address copied',
+    // Tab title
+    selectEmailToRead: 'Select an email to read',
 }
 
 export default en

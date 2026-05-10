@@ -336,6 +336,32 @@ const sw = {
     trackerProtection: 'Ulinzi wa Ufuatiliaji',
     showImages: 'Onyesha picha',
     remoteImagesHidden: 'Picha za nje zimefichwa',
+    // Msongamano wa maonyesho
+    density: 'Msongamano wa Maonyesho',
+    compact: 'Finyu',
+    comfortable: 'Starehe',
+    spacious: 'Pana',
+    // Majibu ya haraka
+    quickReplies: 'Violezo vya Majibu ya Haraka',
+    quickRepliesDesc: 'Vipande vya maandishi vya kubonyeza mara moja kwa dirisha lako la uandishi',
+    addTemplate: 'Ongeza Kiolezo',
+    templateName: 'Lebo',
+    templateText: 'Maandishi',
+    deleteTemplate: 'Futa',
+    insertTemplate: 'Ingiza',
+    emptyTemplateName: 'Lebo ya kiolezo haiwezi kuwa tupu',
+    emptyTemplateText: 'Maandishi ya kiolezo haiwezi kuwa tupu',
+    templates: 'Violezo',
+    // Njia za mkato za kibodi
+    keyboardShortcuts: 'Njia za Mkato za Kibodi',
+    shortcutCompose: 'Tunga barua pepe mpya',
+    shortcutReply: 'Jibu barua pepe iliyo wazi',
+    shortcutHelp: 'Onyesha msaada wa njia za mkato',
+    // Kunakili barua pepe ya mtumaji
+    copyEmail: 'Nakili anwani ya barua pepe',
+    copiedEmail: 'Anwani ya barua pepe imenakiliwa',
+    // Kichwa cha kichupo
+    selectEmailToRead: 'Chagua barua pepe kusoma',
 }
 
 export default sw;

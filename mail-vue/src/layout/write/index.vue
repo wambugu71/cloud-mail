@@ -52,6 +52,34 @@
           <div class="att-clear" @click="clearContent">
             <Icon icon="icon-park-outline:clear-format" width="24" height="24 "/>
           </div>
+          <!-- Quick Reply Templates button -->
+          <el-popover
+            placement="top-start"
+            :width="300"
+            trigger="click"
+            popper-class="template-popover"
+          >
+            <template #reference>
+              <div class="att-templates" :title="t('templates') || 'Templates'">
+                <Icon icon="material-symbols:quick-phrases-outline" width="22" height="22"/>
+              </div>
+            </template>
+            <div class="template-popover-list">
+              <p class="template-popover-title">{{ t('templates') || 'Templates' }}</p>
+              <div
+                v-for="tpl in uiStore.replyTemplates"
+                :key="tpl.id"
+                class="template-popover-item"
+                @click="insertTemplate(tpl.text)"
+              >
+                <span class="tpl-name">{{ tpl.name }}</span>
+                <span class="tpl-preview">{{ tpl.text }}</span>
+              </div>
+              <div v-if="uiStore.replyTemplates.length === 0" class="tpl-empty">
+                {{ t('noMessagesFound') }}
+              </div>
+            </div>
+          </el-popover>
           <div class="att-list">
             <div class="att-item" v-for="(item,index) in form.attachments" :key="index">
               <Icon v-bind="getIconByName(item.filename)"/>
@@ -109,6 +137,7 @@ import {formatDetailDate} from "@/utils/day.js";
 import {useSettingStore} from "@/store/setting.js";
 import {userDraftStore} from "@/store/draft.js";
 import {useWriterStore} from "@/store/writer.js";
+import {useUiStore} from "@/store/ui.js";
 import db from "@/db/db.js";
 import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
@@ -126,6 +155,7 @@ const {t} = useI18n()
 const writerStore = useWriterStore();
 const draftStore = userDraftStore()
 const settingStore = useSettingStore()
+const uiStore = useUiStore()
 const emailStore = useEmailStore();
 const accountStore = useAccountStore()
 const editor = ref({})
@@ -603,6 +633,13 @@ function close() {
 
 }
 
+function insertTemplate(text) {
+  const current = editor.value.getContent?.() || ''
+  editor.value.setContent?.(current + `<p>${text}</p>`)
+  form.content = editor.value.getContent?.() || ''
+}
+
+
 </script>
 <style>
 .write-select .el-select-dropdown__list {
@@ -614,6 +651,51 @@ function close() {
 
 .write-select .el-select-dropdown {
   min-width: 0 !important;
+}
+
+/* Template popover styles */
+.template-popover .template-popover-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+.template-popover .template-popover-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--el-text-color-secondary);
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.template-popover .template-popover-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 4px;
+}
+.template-popover .template-popover-item:hover {
+  background: var(--el-fill-color-light);
+}
+.template-popover .tpl-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+.template-popover .tpl-preview {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.template-popover .tpl-empty {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  text-align: center;
+  padding: 16px 0;
 }
 </style>
 <style scoped lang="scss">
@@ -729,6 +811,16 @@ function close() {
         .att-clear {
           cursor: pointer;
           margin-left: 10px;
+        }
+
+        .att-templates {
+          cursor: pointer;
+          margin-left: 10px;
+          display: flex;
+          align-items: center;
+          color: var(--el-text-color-regular);
+          transition: color 0.15s;
+          &:hover { color: var(--el-color-primary); }
         }
 
         .att-list {

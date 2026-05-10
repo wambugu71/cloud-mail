@@ -67,7 +67,14 @@
             <div class="sender-details">
               <div class="name-line">
                 <span class="sender-name">{{ email.name || email.sendEmail }}</span>
-                <span class="sender-email">&lt;{{ email.sendEmail }}&gt;</span>
+                <span
+                  class="sender-email copy-email"
+                  @click="copySenderEmail(email.sendEmail)"
+                  :title="$t('copyEmail') || 'Copy email'"
+                >
+                  &lt;{{ email.sendEmail }}&gt;
+                  <Icon icon="material-symbols:content-copy-outline" width="12" height="12" class="copy-icon" />
+                </span>
               </div>
               <div class="to-line">
                 to me
@@ -318,6 +325,15 @@ const handleBack = () => {
   router.back()
 }
 
+async function copySenderEmail(email) {
+  try {
+    await navigator.clipboard.writeText(email)
+    ElMessage({ message: t('copiedEmail') || 'Email address copied', type: 'success', plain: true })
+  } catch {
+    ElMessage({ message: t('copyFailMsg'), type: 'error', plain: true })
+  }
+}
+
 const handleDelete = () => {
   ElMessageBox.confirm(t('delEmailConfirm'), {
     confirmButtonText: t('confirm'),
@@ -525,6 +541,34 @@ const handleDelete = () => {
           .sender-email {
             font-size: 13px;
             color: var(--el-text-color-secondary);
+          }
+
+          // Clickable copy variant
+          .copy-email {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 4px;
+            padding: 1px 4px;
+            transition: background 0.15s, color 0.15s;
+            user-select: none;
+
+            .copy-icon {
+              opacity: 0;
+              transition: opacity 0.15s;
+              flex-shrink: 0;
+            }
+
+            &:hover {
+              background: var(--el-fill-color-light);
+              color: var(--el-color-primary);
+              .copy-icon { opacity: 1; }
+            }
+
+            &:active {
+              background: var(--el-fill-color);
+            }
           }
         }
 

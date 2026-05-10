@@ -66,6 +66,33 @@
               </label>
             </div>
           </div>
+          <!-- Density mode toggle -->
+          <div class="form-group">
+            <label>{{ $t('density') || 'Display Density' }}</label>
+            <div class="theme-toggle-group">
+              <label class="theme-option" :class="{active: uiStore.density === 'compact'}">
+                <input type="radio" value="compact" v-model="uiStore.density" class="hidden-radio" />
+                <span>{{ $t('compact') || 'Compact' }}</span>
+              </label>
+              <label class="theme-option" :class="{active: uiStore.density === 'comfortable'}">
+                <input type="radio" value="comfortable" v-model="uiStore.density" class="hidden-radio" />
+                <span>{{ $t('comfortable') || 'Comfortable' }}</span>
+              </label>
+              <label class="theme-option" :class="{active: uiStore.density === 'spacious'}">
+                <input type="radio" value="spacious" v-model="uiStore.density" class="hidden-radio" />
+                <span>{{ $t('spacious') || 'Spacious' }}</span>
+              </label>
+            </div>
+          </div>
+          <!-- Keyboard shortcuts hint -->
+          <div class="form-group">
+            <label>{{ $t('keyboardShortcuts') || 'Keyboard Shortcuts' }}</label>
+            <button class="shortcuts-hint-btn" @click="uiStore.shortcutsHelpShow = true">
+              <Icon icon="material-symbols:keyboard-outline" width="18" height="18" />
+              <span>{{ $t('shortcutHelp') || 'View all shortcuts' }}</span>
+              <Icon icon="material-symbols:chevron-right" width="16" height="16" class="hint-arrow" />
+            </button>
+          </div>
         </div>
       </section>
 
@@ -88,6 +115,57 @@
           <el-button type="primary" :loading="saveSignatureLoading" @click="saveSignature" class="save-btn">
             {{ $t('save') }}
           </el-button>
+        </div>
+      </section>
+
+      <!-- Quick Reply Templates Section -->
+      <section class="bento-card col-span-full">
+        <div class="card-header">
+          <Icon icon="material-symbols:quick-phrases" class="card-icon" />
+          <h2 class="card-title">{{ $t('quickReplies') || 'Quick Reply Templates' }}</h2>
+        </div>
+        <p class="card-desc">{{ $t('quickRepliesDesc') || 'One-click snippets for your compose window' }}</p>
+
+        <!-- Existing templates list -->
+        <div class="template-list">
+          <div class="template-item" v-for="tpl in uiStore.replyTemplates" :key="tpl.id">
+            <div class="template-info">
+              <span class="template-name">{{ tpl.name }}</span>
+              <span class="template-text">{{ tpl.text }}</span>
+            </div>
+            <button class="template-delete-btn" @click="deleteTemplate(tpl.id)" :title="$t('deleteTemplate')">
+              <Icon icon="material-symbols:delete-outline" width="18" height="18" />
+            </button>
+          </div>
+          <div class="template-empty" v-if="uiStore.replyTemplates.length === 0">
+            <Icon icon="material-symbols:format-quote" width="32" height="32" />
+            <span>{{ $t('noMessagesFound') }}</span>
+          </div>
+        </div>
+
+        <!-- Add new template form -->
+        <div class="add-template-form">
+          <el-input
+            v-model="newTemplate.name"
+            :placeholder="$t('templateName') || 'Label'"
+            class="template-name-input"
+            maxlength="40"
+            show-word-limit
+          />
+          <el-input
+            v-model="newTemplate.text"
+            :placeholder="$t('templateText') || 'Text'"
+            type="textarea"
+            :rows="2"
+            maxlength="500"
+            show-word-limit
+          />
+          <div class="card-footer" style="padding-top:16px">
+            <el-button type="primary" @click="addTemplate" class="save-btn">
+              <Icon icon="material-symbols:add" width="16" height="16" style="margin-right:4px" />
+              {{ $t('addTemplate') || 'Add Template' }}
+            </el-button>
+          </div>
         </div>
       </section>
 
@@ -158,6 +236,31 @@ const signatureEditorRef = ref(null)
 const signatureContent = ref('')
 const saveSignatureLoading = ref(false)
 let currentSignatureHtml = ''
+
+// Quick Reply Template form state
+const newTemplate = reactive({ name: '', text: '' })
+
+function addTemplate() {
+  if (!newTemplate.name.trim()) {
+    ElMessage({ message: t('emptyTemplateName'), type: 'error', plain: true })
+    return
+  }
+  if (!newTemplate.text.trim()) {
+    ElMessage({ message: t('emptyTemplateText'), type: 'error', plain: true })
+    return
+  }
+  const id = Date.now()
+  uiStore.replyTemplates.push({ id, name: newTemplate.name.trim(), text: newTemplate.text.trim() })
+  newTemplate.name = ''
+  newTemplate.text = ''
+  ElMessage({ message: t('addSuccessMsg'), type: 'success', plain: true })
+}
+
+function deleteTemplate(id) {
+  const idx = uiStore.replyTemplates.findIndex(t => t.id === id)
+  if (idx > -1) uiStore.replyTemplates.splice(idx, 1)
+}
+
 
 defineOptions({
   name: 'setting'
@@ -586,6 +689,124 @@ function submitPwd() {
       .action-icon, .action-title, .action-desc, .action-arrow {
         color: var(--error, #ba1a1a) !important;
       }
+    }
+  }
+
+  // Keyboard shortcuts hint button
+  .shortcuts-hint-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--base-border-color);
+    background: var(--light-ill, #f7f9fb);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    transition: all 0.2s;
+    text-align: left;
+
+    &:hover {
+      border-color: var(--el-color-primary);
+      background: var(--choose-account-background, #e6f7ff);
+      color: var(--el-color-primary);
+    }
+
+    .hint-arrow {
+      margin-left: auto;
+      color: var(--secondary-text-color);
+    }
+  }
+
+  // Quick reply template list
+  .template-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+
+    .template-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--base-border-color);
+      border-radius: 8px;
+      background: var(--light-ill, #f7f9fb);
+      transition: border-color 0.15s;
+
+      &:hover {
+        border-color: var(--el-color-primary-light-5);
+      }
+
+      .template-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .template-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--el-text-color-primary);
+      }
+
+      .template-text {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .template-delete-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        transition: all 0.15s;
+
+        &:hover {
+          background: var(--error-container, #ffdad6);
+          color: var(--error, #ba1a1a);
+        }
+      }
+    }
+
+    .template-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 24px;
+      color: var(--secondary-text-color);
+      font-size: 13px;
+    }
+  }
+
+  .add-template-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px dashed var(--base-border-color);
+    background: var(--el-bg-color);
+
+    .template-name-input {
+      width: 280px;
     }
   }
 }

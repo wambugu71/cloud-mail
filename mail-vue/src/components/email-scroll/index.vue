@@ -374,10 +374,12 @@ const list = computed(() => {
 })
 
 const itemHeight = computed(() => {
+    const density = uiStore.density || 'comfortable'
+    const densityScale = density === 'compact' ? 0.75 : density === 'spacious' ? 1.35 : 1
     if (props.type === 'all-email') {
-      return isMobile.value ? 132 : 65;
+      return isMobile.value ? Math.round(132 * densityScale) : Math.round(65 * densityScale);
     } else  {
-      return isMobile.value ? 83 : 48;
+      return isMobile.value ? Math.round(83 * densityScale) : Math.round(48 * densityScale);
     }
 })
 
