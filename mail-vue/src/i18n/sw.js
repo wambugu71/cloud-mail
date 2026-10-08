@@ -134,7 +134,8 @@ const sw = {
     loginSwitch: 'Ingia',
     websiteSetting: 'Tovuti',
     websiteReg: 'Jisajili',
-    loginDomain: 'Kikoa cha Kisanduku cha Kuingia',
+    loginDomain: 'Ficha Kikoa cha Kuingia',
+    loginDomainDesc: 'Ficha orodha kunjuzi ya viambishi tamati vya kikoa kwenye kuingia na kujisajili',
     multipleEmail: 'Anwani Nyingi za Barua Pepe',
     multipleEmailDesc: 'Washa kipengele hiki kuruhusu watumiaji kuongeza barua pepe nyingi',
     customization: 'Ubinafsishaji',
@@ -362,6 +363,19 @@ const sw = {
     copiedEmail: 'Anwani ya barua pepe imenakiliwa',
     // Kichwa cha kichupo
     selectEmailToRead: 'Chagua barua pepe kusoma',
+    // Orodha Iliyozuiwa (Blacklist)
+    blackList: 'Orodha Iliyozuiwa',
+    blackListDesc: 'Chuja barua pepe zilizozuiliwa (kataa moja kwa moja)',
+    blackFromDesc: 'Chuja mtumaji, linganisha anwani kamili ya barua pepe au kikoa',
+    blackSubjectDesc: 'Chuja mada, linganisha maneno muhimu yaliyomo',
+    blackContentDesc: 'Chuja yaliyomo, linganisha maneno muhimu yaliyomo',
+    // Utambuzi wa Nambari ya Uthibitishaji
+    codeRecognition: 'Utambuzi wa Nambari ya Uthibitishaji',
+    codeRecognitionRules: 'Sheria za Utambuzi',
+    codeRecognitionRulesDesc: 'Weka sheria za ulinganishaji wa mtumaji kwa kutoa nambari za uthibitishaji',
+    senderRules: 'Sheria za Mtumaji',
+    copyCode: 'Nakili Nambari',
+    codeLabel: 'Nambari: ',
 }
 
 export default sw;

@@ -134,7 +134,8 @@ const en = {
     loginSwitch: 'Sign in',
     websiteSetting: 'Website',
     websiteReg: 'Sign Up',
-    loginDomain: 'Sign-In Box Domain',
+    loginDomain: 'Hide Sign-In Domain',
+    loginDomainDesc: 'Hide domain suffix dropdown on login and registration interface',
     multipleEmail: 'Multiple Email Address',
     multipleEmailDesc: 'Enable this feature to allow users to add multiple email',
     customization: 'Customization',
@@ -362,6 +363,19 @@ const en = {
     copiedEmail: 'Email address copied',
     // Tab title
     selectEmailToRead: 'Select an email to read',
+    // Blacklist
+    blackList: 'Blacklist',
+    blackListDesc: 'Filter blacklisted emails (reject directly)',
+    blackFromDesc: 'Filter sender, match full email address or domain',
+    blackSubjectDesc: 'Filter subject, match containing keywords',
+    blackContentDesc: 'Filter content, match containing keywords',
+    // Verification Code Recognition
+    codeRecognition: 'Verification Code Recognition',
+    codeRecognitionRules: 'Recognition Rules',
+    codeRecognitionRulesDesc: 'Set sender matching rules for extracting verification codes',
+    senderRules: 'Sender Rules',
+    copyCode: 'Copy Code',
+    codeLabel: 'Code: ',
 }
 
 export default en

@@ -14,9 +14,9 @@
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
         <div v-show="show === 'login'">
-          <el-input :class="settingStore.settings.loginDomain === 0 ? 'email-input' : ''" v-model="form.email"
+          <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="form.email"
                     type="text" :placeholder="$t('emailAccount')" autocomplete="off">
-            <template #append v-if="settingStore.settings.loginDomain === 0">
+            <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
                     v-if="show === 'login'"
@@ -49,9 +49,9 @@
           </el-button>
         </div>
         <div v-show="show !== 'login'">
-          <el-input class="email-input" v-model="registerForm.email" type="text" :placeholder="$t('emailAccount')"
+          <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="registerForm.email" type="text" :placeholder="$t('emailAccount')"
                     autocomplete="off">
-            <template #append>
+            <template #append v-if="!hideLoginDomain">
               <div @click.stop="openSelect">
                 <el-select
                     v-if="show !== 'login'"
@@ -108,8 +108,8 @@
     </div>
     <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
       <div class="bind-container">
-        <el-input v-model="bindForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off">
-          <template #append>
+        <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off">
+          <template #append v-if="!hideLoginDomain">
             <div @click.stop="openSelect">
               <el-select
                   ref="mySelect"
@@ -162,6 +162,7 @@ import {loginUserInfo} from "@/request/my.js";
 import {permsToRouter} from "@/perm/perm.js";
 import {useI18n} from "vue-i18n";
 import {oauthBindUser, oauthLinuxDoLogin} from "@/request/ouath.js";
+import {websiteConfig} from "@/request/setting.js";
 
 const {t} = useI18n();
 const accountStore = useAccountStore();
@@ -193,9 +194,16 @@ const registerForm = reactive({
   confirmPassword: '',
   code: null
 })
-const domainList = settingStore.domainList;
+const domainList = computed(() => settingStore.domainList || []);
+const hideLoginDomain = computed(() => settingStore.settings.loginDomain === 1);
+const getFullEmail = (email) => {
+  return hideLoginDomain.value ? email : (email ? email + suffix.value : '');
+};
+const getEmailName = (email) => {
+  return hideLoginDomain.value ? (email ? email.split('@')[0] : '') : email;
+};
 const registerLoading = ref(false)
-suffix.value = domainList[0]
+suffix.value = settingStore.domainList?.[0] || ''
 const verifyShow = ref(false)
 let verifyToken = ''
 let turnstileId = null
@@ -305,7 +313,7 @@ function bind() {
   }
 
 
-  if (bindForm.email.length < settingStore.settings.minEmailPrefix) {
+  if (getEmailName(bindForm.email).length < settingStore.settings.minEmailPrefix) {
     ElMessage({
       message: t('minEmailPrefix', {msg: settingStore.settings.minEmailPrefix}),
       type: 'error',
@@ -314,7 +322,7 @@ function bind() {
     return
   }
 
-  let email = bindForm.email + suffix.value;
+  let email = getFullEmail(bindForm.email);
 
 
   if (!isEmail(email)) {
@@ -340,7 +348,7 @@ function bind() {
 
   }
 
-  const form = {email: bindForm.email + suffix.value, oauthUserId: bindForm.oauthUserId, code: bindForm.code}
+  const form = {email: getFullEmail(bindForm.email), oauthUserId: bindForm.oauthUserId, code: bindForm.code}
 
   bindLoading.value = true
   oauthBindUser(form).then(data => {
@@ -361,7 +369,7 @@ const submit = () => {
     return
   }
 
-  let email = form.email + (settingStore.settings.loginDomain === 0 ? suffix.value : '');
+  let email = getFullEmail(form.email);
 
   if (!isEmail(email)) {
     ElMessage({
@@ -391,7 +399,14 @@ const submit = () => {
 
 async function saveToken(token) {
   localStorage.setItem('token', token)
-  const user = await loginUserInfo();
+  const [user, setting] = await Promise.all([
+    loginUserInfo(),
+    websiteConfig()
+  ]);
+  if (setting) {
+    settingStore.settings = setting;
+    settingStore.domainList = setting.domainList;
+  }
   accountStore.currentAccountId = user.account.accountId;
   accountStore.currentAccount = user.account;
   userStore.user = user;
@@ -419,7 +434,7 @@ function submitRegister() {
 
   console.log(registerForm.email)
 
-  if (registerForm.email.length < settingStore.settings.minEmailPrefix) {
+  if (getEmailName(registerForm.email).length < settingStore.settings.minEmailPrefix) {
     ElMessage({
       message: t('minEmailPrefix', {msg: settingStore.settings.minEmailPrefix}),
       type: 'error',
@@ -428,7 +443,9 @@ function submitRegister() {
     return
   }
 
-  if (!isEmail(registerForm.email + suffix.value)) {
+  let email = getFullEmail(registerForm.email);
+
+  if (!isEmail(email)) {
     ElMessage({
       message: t('notEmailMsg'),
       type: 'error',
@@ -507,7 +524,7 @@ function submitRegister() {
   registerLoading.value = true
 
   const form = {
-    email: registerForm.email + suffix.value,
+    email: getFullEmail(registerForm.email),
     password: registerForm.password,
     token: verifyToken,
     code: registerForm.code

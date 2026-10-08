@@ -47,7 +47,7 @@
         <div class="form-group-list flex-1">
           <div class="form-group">
             <label>{{ $t('language') || 'Language' }}</label>
-            <el-select v-model="locale" placeholder="Select Language" class="w-full">
+            <el-select v-model="settingStore.lang" placeholder="Select Language" class="w-full" @change="changeLang">
               <el-option label="English" value="en" />
               <el-option label="中文" value="zh" />
               <el-option label="Kiswahili" value="sw" />
@@ -223,11 +223,14 @@ import { useI18n } from "vue-i18n";
 import tinyEditor from "@/components/tiny-editor/index.vue";
 import { Icon } from "@iconify/vue";
 import { useUiStore } from "@/store/ui.js";
+import { useSettingStore } from "@/store/setting.js";
+import { setExtend } from "@/utils/day.js";
 
 const { t, locale } = useI18n()
 const accountStore = useAccountStore()
 const userStore = useUserStore();
 const uiStore = useUiStore();
+const settingStore = useSettingStore();
 
 const setPwdLoading = ref(false)
 const saveNameLoading = ref(false)
@@ -266,19 +269,36 @@ defineOptions({
   name: 'setting'
 })
 
+function changeLang(lang) {
+  setExtend(lang === 'en' ? 'en' : (lang === 'sw' ? 'sw' : 'zh-cn'))
+  settingStore.lang = lang
+  locale.value = lang
+  localStorage.setItem('locale', lang)
+}
+
 onMounted(() => {
   accountName.value = userStore.user.name || ''
   signatureContent.value = userStore.user.account?.signature || ''
   currentSignatureHtml = signatureContent.value
   
-  const savedLocale = localStorage.getItem('locale')
-  if (savedLocale) {
-    locale.value = savedLocale
+  if (settingStore.lang) {
+    locale.value = settingStore.lang
+    setExtend(settingStore.lang === 'en' ? 'en' : (settingStore.lang === 'sw' ? 'sw' : 'zh-cn'))
+  } else {
+    const savedLocale = localStorage.getItem('locale')
+    if (savedLocale) {
+      settingStore.lang = savedLocale
+      locale.value = savedLocale
+      setExtend(savedLocale === 'en' ? 'en' : (savedLocale === 'sw' ? 'sw' : 'zh-cn'))
+    }
   }
 })
 
-watch(locale, (newLocale) => {
-  localStorage.setItem('locale', newLocale)
+watch(() => settingStore.lang, (newLocale) => {
+  if (newLocale) {
+    locale.value = newLocale
+    localStorage.setItem('locale', newLocale)
+  }
 })
 
 const updateTheme = () => {

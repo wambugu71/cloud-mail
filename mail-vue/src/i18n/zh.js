@@ -134,7 +134,8 @@ const zh = {
     loginSwitch: '去登录',
     websiteSetting: '网站设置',
     websiteReg: '用户注册',
-    loginDomain: '登录框域名',
+    loginDomain: '隐藏登录域名',
+    loginDomainDesc: '隐藏登录和注册界面的域名后缀下拉列表',
     multipleEmail: '多号模式',
     multipleEmailDesc: '开启后账号栏出现一个用户可以添加多个邮箱',
     customization: '个性化设置',
@@ -336,5 +337,18 @@ const zh = {
     trackerProtection: '追踪保护',
     showImages: '显示图片',
     remoteImagesHidden: '外部图片已隐藏',
+    // 黑名单
+    blackList: '黑名单',
+    blackListDesc: '过滤黑名单邮件（直接拦截）',
+    blackFromDesc: '过滤发件人，匹配完整的邮箱或者域名',
+    blackSubjectDesc: '过滤主题，匹配包含的关键字',
+    blackContentDesc: '过滤内容，匹配包含的关键字',
+    // 验证码识别
+    codeRecognition: '验证码识别',
+    codeRecognitionRules: '识别规则',
+    codeRecognitionRulesDesc: '设置提取验证码的发件人匹配规则',
+    senderRules: '发件人规则',
+    copyCode: '复制验证码',
+    codeLabel: '验证码: ',
 }
 export default zh

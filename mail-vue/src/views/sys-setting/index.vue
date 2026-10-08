@@ -18,9 +18,14 @@
                 </div>
               </div>
               <div class="setting-item">
-                <div><span>{{ $t('loginDomain') }}</span></div>
                 <div>
-                  <el-switch @change="change" :before-change="beforeChange" :active-value="0" :inactive-value="1"
+                  <span>{{ $t('loginDomain') }}</span>
+                  <el-tooltip effect="dark" :content="$t('loginDomainDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-switch @change="change" :before-change="beforeChange" :active-value="1" :inactive-value="0"
                              v-model="setting.loginDomain"/>
                 </div>
               </div>
@@ -189,6 +194,15 @@
                   </el-button>
                 </div>
               </div>
+              <div class="setting-item">
+                <div><span>{{ $t('blackList') }}</span></div>
+                <div>
+                  <el-button class="opt-button" style="margin-top: 0" @click="openBlackListForm" size="small"
+                             type="primary">
+                    <Icon icon="fluent:settings-48-regular" width="16" height="16"/>
+                  </el-button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -346,6 +360,27 @@
                 <div class="forward">
                   <el-button class="opt-button" size="small" type="primary" @click="openNoticePopup">
                     <Icon icon="mynaui:click-solid" width="18" height="18"/>
+                  </el-button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="card-title">Workers AI</div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div><span>{{ $t('codeRecognition') }}</span></div>
+                <div>
+                  <el-switch @change="change" :before-change="beforeChange" :active-value="0" :inactive-value="1"
+                             v-model="setting.aiCode"/>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div><span>{{ $t('codeRecognitionRules') }}</span></div>
+                <div class="forward">
+                  <el-button class="opt-button" size="small" type="primary" @click="openAiCodeFilter">
+                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
                   </el-button>
                 </div>
               </div>
@@ -728,13 +763,51 @@
         </div>
         <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveEmailPrefix">{{ $t('save') }}</el-button>
       </el-dialog>
+      <el-dialog v-model="blackFormShow" class="forward-dialog" @closed="resetBlackList">
+        <template #header>
+          <div class="forward-head">
+            <span class="forward-set-title">{{ $t('blackList') }}</span>
+            <el-tooltip effect="dark" :content="$t('blackListDesc')">
+              <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+            </el-tooltip>
+          </div>
+        </template>
+        <el-form>
+          <el-form-item :label="t('blackFromDesc')" label-position="top">
+            <el-input-tag v-model="blackListForm.blackFrom" @add-tag="banEmailAddTag"  />
+          </el-form-item>
+          <el-form-item :label="t('blackSubjectDesc')" label-position="top">
+            <el-input-tag v-model="blackListForm.blackSubject"/>
+          </el-form-item>
+          <el-form-item :label="t('blackContentDesc')" label-position="top">
+            <el-input-tag v-model="blackListForm.blackContent"/>
+          </el-form-item>
+        </el-form>
+        <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveBlackList">{{ $t('save') }}</el-button>
+      </el-dialog>
+      <el-dialog v-model="aiCodeFilterShow" class="forward-dialog" @closed="resetAiCodeFilter">
+        <template #header>
+          <div class="forward-head">
+            <span class="forward-set-title">{{ $t('codeRecognitionRules') }}</span>
+            <el-tooltip effect="dark" :content="$t('codeRecognitionRulesDesc')">
+              <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+            </el-tooltip>
+          </div>
+        </template>
+        <el-form>
+          <el-form-item :label="t('senderRules')" label-position="top">
+            <el-input-tag v-model="aiCodeFilter" @add-tag="aiCodeFilterAddTag"/>
+          </el-form-item>
+        </el-form>
+        <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveAiCodeFilter">{{ $t('save') }}</el-button>
+      </el-dialog>
     </el-scrollbar>
   </div>
 </template>
 
 <script setup>
 import {computed, defineOptions, reactive, ref} from "vue";
-import {deleteBackground, setBackground, settingQuery, settingSet} from "@/request/setting.js";
+import {deleteBackground, setBackground, setBlackList, settingQuery, settingSet} from "@/request/setting.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
@@ -743,7 +816,7 @@ import {Icon} from "@iconify/vue";
 import {cvtR2Url} from "@/utils/convert.js";
 import {storeToRefs} from "pinia";
 import {debounce} from 'lodash-es'
-import {isEmail} from "@/utils/verify-utils.js";
+import {isDomain, isEmail} from "@/utils/verify-utils.js";
 import loading from "@/components/loading/index.vue";
 import {getTextWidth} from "@/utils/text.js";
 import {fileToBase64} from "@/utils/file-utils.js"
@@ -765,6 +838,8 @@ const accountStore = useAccountStore();
 const userStore = useUserStore();
 const editTitleShow = ref(false)
 const resendTokenFormShow = ref(false)
+const blackFormShow = ref(false)
+const aiCodeFilterShow = ref(false)
 const r2DomainShow = ref(false)
 const turnstileShow = ref(false)
 const tgSettingShow = ref(false)
@@ -783,6 +858,12 @@ const r2DomainInput = ref('')
 const loginOpacity = ref(0)
 const minEmailPrefix = ref(0)
 const emailPrefixFilter = ref([])
+const blackListForm = ref({
+  blackSubject: [],
+  blackContent: [],
+  blackFrom: []
+})
+const aiCodeFilter = ref([])
 const backgroundUrl = ref('')
 let backgroundFile = {}
 const showSetBackground = ref(false)
@@ -874,6 +955,8 @@ function getSettings() {
     resetNoticeForm()
     resetAddS3Form()
     resetEmailPrefix()
+    resetBlackList()
+    resetAiCodeFilter()
   })
 }
 
@@ -1155,6 +1238,78 @@ function saveEmailPrefix() {
   editSetting(form, true)
 }
 
+function resetBlackList() {
+  blackListForm.value.blackFrom = setting.value.blackFrom ? setting.value.blackFrom.split(',') : []
+  blackListForm.value.blackContent = setting.value.blackContent ? setting.value.blackContent.split(',') : []
+  blackListForm.value.blackSubject = setting.value.blackSubject ? setting.value.blackSubject.split(',') : []
+}
+
+function resetAiCodeFilter() {
+  aiCodeFilter.value = setting.value.aiCodeFilter ? setting.value.aiCodeFilter.split(',') : []
+}
+
+function saveBlackList() {
+  let form = {
+    blackContent: blackListForm.value.blackContent + '',
+    blackSubject: blackListForm.value.blackSubject + '',
+    blackFrom: blackListForm.value.blackFrom + ''
+  }
+
+  settingLoading.value = true
+
+  setBlackList(form).then(() => {
+    getSettings()
+    ElMessage({
+      message: t('saveSuccessMsg'),
+      type: "success",
+      plain: true
+    })
+    blackFormShow.value = false;
+  }).finally(() => {
+    settingLoading.value = false;
+  })
+}
+
+function saveAiCodeFilter() {
+  editSetting({aiCodeFilter: aiCodeFilter.value + ''})
+}
+
+function banEmailAddTag(val) {
+  const emails = Array.from(new Set(
+      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+  ));
+
+  blackListForm.value.blackFrom.splice(blackListForm.value.blackFrom.length - 1, 1)
+
+  emails.forEach(email => {
+    if ((isEmail(email) || isDomain(email)) && !blackListForm.value.blackFrom.includes(email)) {
+      blackListForm.value.blackFrom.push(email)
+    }
+  })
+}
+
+function aiCodeFilterAddTag(val) {
+  const emails = Array.from(new Set(
+      val.split(/[,，]/).map(item => item.trim()).filter(item => item)
+  ));
+
+  aiCodeFilter.value.splice(aiCodeFilter.value.length - 1, 1)
+
+  emails.forEach(email => {
+    if ((isEmail(email) || isDomain(email)) && !aiCodeFilter.value.includes(email)) {
+      aiCodeFilter.value.push(email)
+    }
+  })
+}
+
+function openBlackListForm() {
+  blackFormShow.value = true
+}
+
+function openAiCodeFilter() {
+  aiCodeFilterShow.value = true
+}
+
 const opacityChange = debounce(doOpacityChange, 1000, {
   leading: false,
   trailing: true
@@ -1322,6 +1477,8 @@ function editSetting(settingForm, refreshStatus = true) {
     noticePopupShow.value = false
     addS3Show.value = false
     emailPrefixShow.value = false
+    blackFormShow.value = false
+    aiCodeFilterShow.value = false
   }).catch((e) => {
     loginOpacity.value = setting.value.loginOpacity
     setting.value = {...setting.value, ...JSON.parse(backup)}

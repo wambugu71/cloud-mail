@@ -82,6 +82,7 @@
                 </div>
                 
                 <h3 class="row-subject" :class="{ 'is-unread': item.unread === EmailUnreadEnum.UNREAD && showUnread }">
+                  <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">[{{ $t('codeLabel') }}{{ item.code }}]</span>
                   <slot name="subject" :email="item">{{ item.subject || '\u200B' }}</slot>
                 </h3>
                 
@@ -196,6 +197,14 @@
               <div class="right-dropdown-item">
                 <Icon icon="iconoir:search" width="20" height="20" />
                 <span>{{t('searchSender')}}</span>
+              </div>
+            </template>
+          </el-dropdown-item>
+          <el-dropdown-item v-if="rightClickEmail.code" @click="copyCode(rightClickEmail.code)">
+            <template #default>
+              <div class="right-dropdown-item">
+                <Icon icon="material-symbols:content-copy-outline" width="18" height="18" />
+                <span>{{t('copyCode')}}</span>
               </div>
             </template>
           </el-dropdown-item>
@@ -594,6 +603,24 @@ function starChange(email) {
 function changeAccountShow() {
   uiStore.accountShow = !uiStore.accountShow;
 }
+
+const copyCode = async (code) => {
+  if (!code) return;
+  try {
+    await navigator.clipboard.writeText(code);
+    ElMessage({
+      message: t('copySuccessMsg'),
+      type: 'success',
+      plain: true,
+    });
+  } catch (e) {
+    ElMessage({
+      message: t('copyFailMsg'),
+      type: 'error',
+      plain: true,
+    });
+  }
+};
 
 const handleRead = () => {
   const emailIds = getSelectedMailsIds();
@@ -1124,6 +1151,16 @@ function loadData() {
       margin: 0 0 2px 0;
       
       &.is-unread { font-weight: 700; }
+
+      .code-tag {
+        color: var(--el-color-primary);
+        font-weight: 600;
+        cursor: pointer;
+        margin-right: 6px;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
     .row-snippet {

@@ -89,5 +89,9 @@ export function toUtc(time) {
 }
 
 export function setExtend(lang) {
-    dayjs.locale(lang)
+    if (lang === 'zh' || lang === 'zh-cn') {
+        dayjs.locale('zh-cn');
+    } else {
+        dayjs.locale('en');
+    }
 }

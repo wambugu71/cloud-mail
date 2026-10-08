@@ -56,7 +56,10 @@
     <el-scrollbar class="scrollbar">
       <div class="container">
         <!-- Subject -->
-        <h1 class="email-title">{{ email.subject || '(No Subject)' }}</h1>
+        <h1 class="email-title">
+          <span v-if="email.code" class="code-tag" @click="copyCode(email.code)" :title="$t('copyCode')">[{{ $t('codeLabel') }}{{ email.code }}]</span>
+          {{ email.subject || '(No Subject)' }}
+        </h1>
         
         <!-- Sender Info -->
         <div class="sender-info">
@@ -334,6 +337,16 @@ async function copySenderEmail(email) {
   }
 }
 
+async function copyCode(code) {
+  if (!code) return
+  try {
+    await navigator.clipboard.writeText(code)
+    ElMessage({ message: t('copySuccessMsg'), type: 'success', plain: true })
+  } catch {
+    ElMessage({ message: t('copyFailMsg'), type: 'error', plain: true })
+  }
+}
+
 const handleDelete = () => {
   ElMessageBox.confirm(t('delEmailConfirm'), {
     confirmButtonText: t('confirm'),
@@ -489,6 +502,19 @@ const handleDelete = () => {
     color: var(--el-text-color-primary);
     margin: 0 0 24px 0;
     line-height: 1.3;
+
+    .code-tag {
+      display: inline-block;
+      font-size: 20px;
+      color: var(--el-color-primary);
+      cursor: pointer;
+      margin-right: 8px;
+      vertical-align: middle;
+      user-select: all;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   .sender-info {
