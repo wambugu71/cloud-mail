@@ -23,3 +23,7 @@ export function deleteBackground() {
 export function setBlackList(form) {
     return http.put('/setting/setBlacklist', form)
 }
+
+export function settingCleanEmails() {
+    return http.post('/setting/cleanEmails')
+}

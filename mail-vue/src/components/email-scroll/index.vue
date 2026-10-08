@@ -83,6 +83,7 @@
                 
                 <h3 class="row-subject" :class="{ 'is-unread': item.unread === EmailUnreadEnum.UNREAD && showUnread }">
                   <span v-if="item.code" class="code-tag" @click.stop="copyCode(item.code)">[{{ $t('codeLabel') }}{{ item.code }}]</span>
+                  <span v-if="getSubaddressTag(item.toEmail)" class="subaddress-row-tag">+{{ getSubaddressTag(item.toEmail) }}</span>
                   <slot name="subject" :email="item">{{ item.subject || '\u200B' }}</slot>
                 </h3>
                 
@@ -622,6 +623,13 @@ const copyCode = async (code) => {
   }
 };
 
+function getSubaddressTag(toEmail) {
+  if (!toEmail || typeof toEmail !== 'string') return '';
+  const local = toEmail.split('@')[0];
+  const plusIdx = local.indexOf('+');
+  return plusIdx > 0 ? local.substring(plusIdx + 1) : '';
+}
+
 const handleRead = () => {
   const emailIds = getSelectedMailsIds();
   props.emailRead(emailIds);
@@ -1160,6 +1168,20 @@ function loadData() {
         &:hover {
           text-decoration: underline;
         }
+      }
+
+      .subaddress-row-tag {
+        display: inline-block;
+        font-size: 11px;
+        line-height: 1.3;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
+        border: 1px solid var(--el-color-primary-light-7);
+        margin-right: 6px;
+        font-weight: 600;
+        vertical-align: baseline;
       }
     }
 

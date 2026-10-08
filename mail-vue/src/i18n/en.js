@@ -376,6 +376,23 @@ const en = {
     senderRules: 'Sender Rules',
     copyCode: 'Copy Code',
     codeLabel: 'Code: ',
+    // Auto Clean Emails & Subaddress
+    autoCleanEmails: 'Auto Email Cleanup',
+    autoCleanEmailsDesc: 'Automatically clean up emails older than the selected retention period (runs daily)',
+    cleanNow: 'Clean Now',
+    cleanEmailsConfirm: 'Are you sure you want to clean up old emails now? Emails exceeding the retention period will be permanently deleted.',
+    cleanEmailsSuccess: 'Cleanup completed, deleted {count} emails',
+    threeDays: '3 Days',
+    sevenDays: '7 Days',
+    fifteenDays: '15 Days',
+    thirtyDays: '30 Days',
+    sixtyDays: '60 Days',
+    ninetyDays: '90 Days',
+    oneEightyDays: '180 Days',
+    threeSixtyFiveDays: '365 Days',
+    subaddressMechanism: 'Subaddressing (+)',
+    subaddressDesc: 'Support plus-addressing (e.g. user+tag@domain.com routed to user@domain.com)',
+    subaddress: 'Subaddress',
 }
 
 export default en

@@ -376,6 +376,23 @@ const sw = {
     senderRules: 'Sheria za Mtumaji',
     copyCode: 'Nakili Nambari',
     codeLabel: 'Nambari: ',
+    // Usafishaji Kiotomatiki & Subaddressing
+    autoCleanEmails: 'Usafishaji Kiotomatiki wa Barua Pepe',
+    autoCleanEmailsDesc: 'Safisha barua pepe za zamani kiotomatiki baada ya muda uliowekwa (hufanyika kila siku)',
+    cleanNow: 'Safisha Sasa',
+    cleanEmailsConfirm: 'Una uhakika unataka kusafisha barua pepe za zamani sasa? Barua pepe zilizopitiliza muda zitaondolewa kabisa.',
+    cleanEmailsSuccess: 'Usafishaji umekamilika, barua pepe {count} zimefutwa',
+    threeDays: 'Siku 3',
+    sevenDays: 'Siku 7',
+    fifteenDays: 'Siku 15',
+    thirtyDays: 'Siku 30',
+    sixtyDays: 'Siku 60',
+    ninetyDays: 'Siku 90',
+    oneEightyDays: 'Siku 180',
+    threeSixtyFiveDays: 'Siku 365',
+    subaddressMechanism: 'Mfumo wa Anwani Ndogo (+)',
+    subaddressDesc: 'Kuwezesha anwani za nyongeza (k.m. user+tag@domain.com huelekezwa kwa user@domain.com)',
+    subaddress: 'Anwani Ndogo',
 }
 
 export default sw;

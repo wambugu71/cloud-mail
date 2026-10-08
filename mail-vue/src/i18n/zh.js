@@ -350,5 +350,22 @@ const zh = {
     senderRules: '发件人规则',
     copyCode: '复制验证码',
     codeLabel: '验证码: ',
+    // 自动清理邮件与子地址
+    autoCleanEmails: '自动清理邮件',
+    autoCleanEmailsDesc: '自动清理超过设定保存天数的邮件（每日定时执行）',
+    cleanNow: '立即清理',
+    cleanEmailsConfirm: '确定要立即清理过期邮件吗？超过保存期限的邮件将被彻底删除。',
+    cleanEmailsSuccess: '清理完成，共删除 {count} 封邮件',
+    threeDays: '3天',
+    sevenDays: '7天',
+    fifteenDays: '15天',
+    thirtyDays: '30天',
+    sixtyDays: '60天',
+    ninetyDays: '90天',
+    oneEightyDays: '180天',
+    threeSixtyFiveDays: '365天',
+    subaddressMechanism: '子地址机制 (+)',
+    subaddressDesc: '支持加号子地址（如 user+tag@domain.com 自动路由至 user@domain.com）',
+    subaddress: '子地址',
 }
 export default zh

@@ -79,11 +79,29 @@ const emailService = {
 			}
 		}
 
+		const projection = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			name: email.name,
+			accountId: email.accountId,
+			userId: email.userId,
+			subject: email.subject,
+			code: email.code,
+			text: email.text,
+			content: params.noContent === 'true' ? sql`NULL` : email.content,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			status: email.status,
+			message: email.message,
+			unread: email.unread,
+			createTime: email.createTime,
+			isDel: email.isDel,
+			starId: star.starId
+		};
+
 		const query = orm(c)
-			.select({
-				...email,
-				starId: star.starId
-			})
+			.select(projection)
 			.from(email)
 			.leftJoin(
 				star,
@@ -115,7 +133,9 @@ const emailService = {
 
 		const listQuery = query.limit(size).all();
 
-		const totalQuery = orm(c).select({ total: count() }).from(email)
+		// Only query total count on initial load (not on subsequent pagination scrolls)
+		const isInitialPage = !params.emailId || Number(params.emailId) === 0 || Number(params.emailId) >= 9000000000;
+		const totalQuery = isInitialPage ? orm(c).select({ total: count() }).from(email)
 			.leftJoin(
 				account,
 				eq(account.accountId, email.accountId)
@@ -129,9 +149,9 @@ const emailService = {
 					eq(account.isDel, isDel.NORMAL),
 					...searchConditions
 				)
-		).get();
+		).get() : Promise.resolve(null);
 
-		const latestEmailQuery = orm(c).select().from(email).where(
+		const latestEmailQuery = orm(c).select({ emailId: email.emailId }).from(email).where(
 			and(
 				allReceive ? eq(1,1) : eq(email.accountId, accountId),
 				eq(email.userId, userId),
@@ -158,7 +178,7 @@ const emailService = {
 			}
 		}
 
-		return { list, total: totalRow.total, latestEmail };
+		return { list, total: totalRow ? totalRow.total : undefined, latestEmail };
 	},
 
 	async delete(c, params, userId) {
@@ -613,12 +633,72 @@ const emailService = {
 		return list;
 	},
 
+	async detail(c, emailId, userId) {
+		let userRow = await userService.selectById(c, userId);
+		const isAdmin = c.env.admin === userRow?.email;
+
+		const whereCondition = isAdmin
+			? and(eq(email.emailId, emailId), eq(email.isDel, isDel.NORMAL))
+			: and(eq(email.emailId, emailId), eq(email.userId, userId), eq(email.isDel, isDel.NORMAL));
+
+		const row = await orm(c).select({ ...email }).from(email).where(whereCondition).get();
+
+		if (!row) {
+			throw new BizError(t('notExistEmailReply') || 'Email not found', 404);
+		}
+
+		const atts = await attService.selectByEmailIds(c, [emailId]);
+		row.attList = atts || [];
+		return row;
+	},
+
+	async autoCleanEmails(c) {
+		try {
+			const settingRow = await settingService.query(c);
+			const days = Number(settingRow.autoCleanDays);
+			if (!days || days <= 0) {
+				return { cleanedCount: 0, message: 'Auto cleanup disabled' };
+			}
+
+			const cutoffDate = dayjs().subtract(days, 'day').format('YYYY-MM-DD HH:mm:ss');
+			let totalCleaned = 0;
+			const BATCH_LIMIT = 200;
+
+			// Clean up to 1000 emails per execution to remain within Worker CPU limits
+			for (let i = 0; i < 5; i++) {
+				const oldRows = await c.env.db.prepare(
+					`SELECT email_id FROM email WHERE datetime(create_time) < datetime(?) LIMIT ?`
+				).bind(cutoffDate, BATCH_LIMIT).all();
+
+				const emailIds = (oldRows.results || []).map(r => r.email_id).filter(Boolean);
+				if (!emailIds.length) break;
+
+				await this.physicsDelete(c, { emailIds });
+				totalCleaned += emailIds.length;
+				if (emailIds.length < BATCH_LIMIT) break;
+			}
+
+			return { cleanedCount: totalCleaned, cutoffDate };
+		} catch (e) {
+			console.error('autoCleanEmails error: ', e);
+			return { cleanedCount: 0, error: e.message };
+		}
+	},
+
 	async physicsDelete(c, params) {
 		let { emailIds } = params;
-		emailIds = emailIds.split(',').map(Number);
-		await attService.removeByEmailIds(c, emailIds);
-		await starService.removeByEmailIds(c, emailIds);
-		await orm(c).delete(email).where(inArray(email.emailId, emailIds)).run();
+		if (typeof emailIds === 'string') {
+			emailIds = emailIds.split(',').map(Number).filter(Boolean);
+		}
+		if (!Array.isArray(emailIds) || emailIds.length === 0) return;
+
+		const CHUNK_SIZE = 100;
+		for (let i = 0; i < emailIds.length; i += CHUNK_SIZE) {
+			const chunk = emailIds.slice(i, i + CHUNK_SIZE);
+			await attService.removeByEmailIds(c, chunk);
+			await starService.removeByEmailIds(c, chunk);
+			await orm(c).delete(email).where(inArray(email.emailId, chunk)).run();
+		}
 	},
 
 	async physicsDeleteUserIds(c, userIds) {
@@ -739,9 +819,10 @@ const emailService = {
 			query.orderBy(desc(email.emailId));
 		}
 
-		const listQuery = await query.limit(size).all();
-		const totalQuery = await queryCount.get();
-		const latestEmailQuery = await orm(c).select().from(email)
+		const isInitialPage = !params.emailId || Number(params.emailId) === 0 || Number(params.emailId) >= 9000000000;
+		const listQuery = query.limit(size).all();
+		const totalQuery = isInitialPage ? queryCount.get() : Promise.resolve(null);
+		const latestEmailQuery = orm(c).select({ emailId: email.emailId }).from(email)
 			.where(and(
 				eq(email.type, emailConst.type.RECEIVE),
 				ne(email.status, emailConst.status.SAVING)

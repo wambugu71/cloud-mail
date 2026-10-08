@@ -31,7 +31,8 @@ export async function email(message, env, ctx) {
 			blackContent,
 			blackFrom,
 			aiCode,
-			aiCodeFilter
+			aiCodeFilter,
+			subaddress: subaddressSetting
 		} = await settingService.query({ env });
 
 		if (receive === settingConst.receive.CLOSE) {
@@ -58,7 +59,20 @@ export async function email(message, env, ctx) {
 			return;
 		}
 
-		const account = await accountService.selectByEmailIncludeDel({ env: env }, message.to);
+		let account = await accountService.selectByEmailIncludeDel({ env: env }, message.to);
+		let baseEmail = message.to;
+
+		// Subaddress mechanism: if direct recipient not found and subaddressing is enabled (default enabled)
+		if (!account && (subaddressSetting ?? 1) === 1) {
+			const subaddr = emailUtils.parseSubaddress(message.to);
+			if (subaddr.hasTag) {
+				const baseAccount = await accountService.selectByEmailIncludeDel({ env: env }, subaddr.baseEmail);
+				if (baseAccount) {
+					account = baseAccount;
+					baseEmail = subaddr.baseEmail;
+				}
+			}
+		}
 
 		if (!account && noRecipient === settingConst.noRecipient.CLOSE) {
 			message.setReject('Recipient not found');
@@ -75,7 +89,7 @@ export async function email(message, env, ctx) {
 
 			let { banEmail, availDomain } = await roleService.selectByUserId({ env: env }, account.userId);
 
-			if (!roleService.hasAvailDomainPerm(availDomain, message.to)) {
+			if (!roleService.hasAvailDomainPerm(availDomain, baseEmail)) {
 				message.setReject('The recipient is not authorized to use this domain.');
 				return;
 			}
@@ -152,7 +166,7 @@ export async function email(message, env, ctx) {
 
 			const emails = ruleEmail.split(',');
 
-			if (!emails.includes(message.to)) {
+			if (!emails.includes(message.to) && !emails.includes(baseEmail)) {
 				return;
 			}
 

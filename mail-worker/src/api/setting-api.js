@@ -1,6 +1,7 @@
 import app from '../hono/hono';
 import result from '../model/result';
 import settingService from '../service/setting-service';
+import emailService from '../service/email-service';
 
 app.put('/setting/set', async (c) => {
 	await settingService.set(c, await c.req.json());
@@ -30,5 +31,10 @@ app.delete('/setting/deleteBackground', async (c) => {
 app.put('/setting/setBlacklist', async (c) => {
 	const setting = await settingService.setBlacklist(c, await c.req.json());
 	return c.json(result.ok(setting));
+});
+
+app.post('/setting/cleanEmails', async (c) => {
+	const data = await emailService.autoCleanEmails(c);
+	return c.json(result.ok(data));
 });
 

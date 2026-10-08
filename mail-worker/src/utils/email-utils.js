@@ -14,6 +14,26 @@ const emailUtils = {
 		return parts.length === 2 ? parts[0] : '';
 	},
 
+	parseSubaddress(email) {
+		if (typeof email !== 'string') return { baseEmail: '', tag: '', hasTag: false, domain: '' };
+		const atIdx = email.lastIndexOf('@');
+		if (atIdx === -1) return { baseEmail: email, tag: '', hasTag: false, domain: '' };
+		const localPart = email.substring(0, atIdx).trim();
+		const domain = email.substring(atIdx + 1).trim();
+		const plusIdx = localPart.indexOf('+');
+		if (plusIdx > 0) {
+			const baseLocal = localPart.substring(0, plusIdx);
+			const tag = localPart.substring(plusIdx + 1);
+			return {
+				baseEmail: `${baseLocal}@${domain}`,
+				tag,
+				hasTag: true,
+				domain
+			};
+		}
+		return { baseEmail: email, tag: '', hasTag: false, domain };
+	},
+
 	formatText(text) {
 		if (!text) return ''
 		return text

@@ -28,5 +28,6 @@ export default {
 		await userService.resetDaySendCount({ env })
 		await emailService.completeReceiveAll({ env })
 		await oauthService.clearNoBindOathUser({ env })
+		await emailService.autoCleanEmails({ env })
 	},
 };

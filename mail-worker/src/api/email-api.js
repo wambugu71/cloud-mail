@@ -14,6 +14,12 @@ app.get('/email/latest', async (c) => {
 	return c.json(result.ok(list));
 });
 
+app.get('/email/detail', async (c) => {
+	const emailId = Number(c.req.query('emailId'));
+	const data = await emailService.detail(c, emailId, userContext.getUserId(c));
+	return c.json(result.ok(data));
+});
+
 app.delete('/email/delete', async (c) => {
 	await emailService.delete(c, c.req.query(), userContext.getUserId(c));
 	return c.json(result.ok());

@@ -1,6 +1,7 @@
 {
 	"name": "mail-worker",
 	"version": "0.0.0",
+	"type": "module",
 	"private": true,
 	"scripts": {
 		"dev": "wrangler dev --config wrangler-dev.toml",
@@ -16,14 +17,14 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.882.0",
 		"@cloudflare/vite-plugin": "1.6.0",
-		"dayjs": "^1.11.13",
+		"dayjs": "^1.11.18",
 		"drizzle-orm": "^0.42.0",
-		"hono": "^4.7.5",
-		"i18next": "^25.3.2",
-		"linkedom": "^0.18.10",
-		"postal-mime": "^2.4.3",
+		"hono": "^4.11.0",
+		"i18next": "^25.10.0",
+		"linkedom": "^0.18.13",
+		"postal-mime": "^2.7.6",
 		"resend": "^6.4.1",
-		"ua-parser-js": "^2.0.3",
-		"uuid": "^11.1.0"
+		"ua-parser-js": "^2.0.10",
+		"uuid": "^11.1.1"
 	}
 }

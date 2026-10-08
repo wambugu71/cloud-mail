@@ -30,8 +30,53 @@ const dbInit = {
 		await this.v2_9DB(c);
 		await this.v2_10DB(c);
 		await this.v3_0DB(c);
+		await this.v3_1DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_1DB(c) {
+		const alterStatements = [
+			`ALTER TABLE setting ADD COLUMN auto_clean_days INTEGER NOT NULL DEFAULT 0;`,
+			`ALTER TABLE setting ADD COLUMN subaddress INTEGER NOT NULL DEFAULT 1;`
+		];
+		for (const sql of alterStatements) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`跳过字段：${e.message}`);
+			}
+		}
+
+		const indexStatements = [
+			`CREATE INDEX IF NOT EXISTS idx_email_user_del_type_id ON email(user_id, is_del, type, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_account_del_type_id ON email(account_id, is_del, type, email_id DESC);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_to_email ON email(to_email);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_send_email ON email(send_email);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_create_time ON email(create_time);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_is_del ON email(is_del);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_message_id ON email(message_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_type ON email(type);`,
+			`CREATE INDEX IF NOT EXISTS idx_email_unread ON email(unread);`,
+			`CREATE UNIQUE INDEX IF NOT EXISTS idx_star_user_email ON star(user_id, email_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_star_email_id ON star(email_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_att_email_id ON attachments(email_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_att_user_id ON attachments(user_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_att_account_id ON attachments(account_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_att_key ON attachments(key);`,
+			`CREATE INDEX IF NOT EXISTS idx_account_user_del ON account(user_id, is_del);`,
+			`CREATE INDEX IF NOT EXISTS idx_vr_ip_type ON verify_record(ip, type);`,
+			`CREATE INDEX IF NOT EXISTS idx_vr_update_time ON verify_record(update_time);`,
+			`CREATE INDEX IF NOT EXISTS idx_oauth_user_id ON oauth(user_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_oauth_user_platform ON oauth(oauth_user_id, platform);`
+		];
+		for (const sql of indexStatements) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`跳过索引：${e.message}`);
+			}
+		}
 	},
 
 	async v3_0DB(c) {

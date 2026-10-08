@@ -203,6 +203,44 @@
                   </el-button>
                 </div>
               </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('autoCleanEmails') }}</span>
+                  <el-tooltip effect="dark" :content="$t('autoCleanEmailsDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <el-select
+                      @change="change"
+                      :style="`width: ${ locale === 'en' ? 110 : 90 }px;`"
+                      v-model="setting.autoCleanDays"
+                      placeholder="Select"
+                  >
+                    <el-option
+                        v-for="item in autoCleanOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                    />
+                  </el-select>
+                  <el-button class="opt-button" size="small" type="danger" plain @click="handleManualClean" :loading="cleaningLoading" :title="$t('cleanNow')">
+                    <Icon icon="mdi:broom" width="16" height="16"/>
+                  </el-button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
+                  <span>{{ $t('subaddressMechanism') }}</span>
+                  <el-tooltip effect="dark" :content="$t('subaddressDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div>
+                  <el-switch @change="change" :before-change="beforeChange" :active-value="1" :inactive-value="0"
+                             v-model="setting.subaddress"/>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -807,7 +845,8 @@
 
 <script setup>
 import {computed, defineOptions, reactive, ref} from "vue";
-import {deleteBackground, setBackground, setBlackList, settingQuery, settingSet} from "@/request/setting.js";
+import {deleteBackground, setBackground, setBlackList, settingCleanEmails, settingQuery, settingSet} from "@/request/setting.js";
+import {ElMessage, ElMessageBox} from "element-plus";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
@@ -916,6 +955,49 @@ const authRefreshOptions = computed(() => [
   {label: '15s', value: 15},
   {label: '20s', value: 20},
 ])
+
+const cleaningLoading = ref(false)
+
+const autoCleanOptions = computed(() => [
+  {label: t('disable'), value: 0},
+  {label: t('threeDays'), value: 3},
+  {label: t('sevenDays'), value: 7},
+  {label: t('fifteenDays'), value: 15},
+  {label: t('thirtyDays'), value: 30},
+  {label: t('sixtyDays'), value: 60},
+  {label: t('ninetyDays'), value: 90},
+  {label: t('oneEightyDays'), value: 180},
+  {label: t('threeSixtyFiveDays'), value: 365},
+])
+
+function handleManualClean() {
+  ElMessageBox.confirm(
+    t('cleanEmailsConfirm'),
+    t('warning'),
+    {
+      confirmButtonText: t('confirm'),
+      cancelButtonText: t('cancel'),
+      type: 'warning'
+    }
+  ).then(() => {
+    cleaningLoading.value = true
+    settingCleanEmails().then((res) => {
+      ElMessage({
+        message: t('cleanEmailsSuccess', { count: res?.cleanedCount ?? 0 }),
+        type: 'success',
+        plain: true
+      })
+    }).catch((err) => {
+      ElMessage({
+        message: err.message || 'Cleanup failed',
+        type: 'error',
+        plain: true
+      })
+    }).finally(() => {
+      cleaningLoading.value = false
+    })
+  }).catch(() => {})
+}
 
 const tgChatId = ref([])
 const customDomain = ref('')

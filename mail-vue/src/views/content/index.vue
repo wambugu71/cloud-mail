@@ -80,8 +80,11 @@
                 </span>
               </div>
               <div class="to-line">
-                to me
-                <Icon icon="material-symbols:arrow-drop-down" width="16" height="16" class="dropdown-icon" />
+                <span>{{ $t('to') || 'to' }} {{ email.type === 0 ? (email.toEmail || userStore.user.email) : email.sendEmail }}</span>
+                <el-tag v-if="subaddressTag" size="small" type="primary" class="subaddress-tag" effect="plain" style="margin-left: 6px; font-weight: 500;">
+                  <Icon icon="material-symbols:label-outline" width="12" height="12" style="margin-right: 2px;" />
+                  +{{ subaddressTag }}
+                </el-tag>
               </div>
             </div>
           </div>
@@ -98,9 +101,12 @@
           </div>
 
           <!-- Email Body -->
-          <el-scrollbar class="htm-scrollbar" :class="email.attList.length === 0 ? 'bottom-distance' : ''">
+          <el-scrollbar class="htm-scrollbar" :class="(!email.attList || email.attList.length === 0) ? 'bottom-distance' : ''">
+            <div v-if="loadingDetail" style="padding: 20px;">
+              <el-skeleton :rows="6" animated />
+            </div>
             <ShadowHtml
-              v-if="email.content"
+              v-else-if="email.content"
               class="shadow-html"
               :html="formatImage(email.content)"
               v-model:imagesAllowed="imagesAllowed"
@@ -160,10 +166,11 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {reactive, ref, computed, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {emailDelete, emailRead} from "@/request/email.js";
+import {emailDelete, emailRead, emailDetail} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
+import {useUserStore} from "@/store/user.js";
 import {formatDetailDate} from "@/utils/day.js";
 import {starAdd, starCancel} from "@/request/star.js";
 import {getExtName, formatBytes} from "@/utils/file-utils.js";
@@ -178,12 +185,21 @@ import {EmailUnreadEnum} from "@/enums/email-enum.js";
 const uiStore = useUiStore();
 const settingStore = useSettingStore();
 const accountStore = useAccountStore();
+const userStore = useUserStore();
 const emailStore = useEmailStore();
 const router = useRouter()
 // computed so the view always reflects whatever email is selected in the store
 const email = computed(() => emailStore.contentData.email)
 const showPreview = ref(false)
 const srcList = reactive([])
+const loadingDetail = ref(false)
+
+const subaddressTag = computed(() => {
+  if (!email.value?.toEmail) return '';
+  const localPart = email.value.toEmail.split('@')[0];
+  const plusIdx = localPart.indexOf('+');
+  return plusIdx > 0 ? localPart.substring(plusIdx + 1) : '';
+});
 
 const isMobile = ref(window.innerWidth < 1024);
 const handleResize = () => { isMobile.value = window.innerWidth < 1024; };
@@ -214,6 +230,29 @@ function onRemoteImagesFound(count) {
   clientBlockedCount.value = count
 }
 
+async function loadDetail(targetEmail) {
+  if (!targetEmail?.emailId) return
+  if (targetEmail.content) return
+  try {
+    loadingDetail.value = true
+    const detail = await emailDetail(targetEmail.emailId)
+    if (detail && email.value?.emailId === targetEmail.emailId) {
+      if (detail.content !== undefined) email.value.content = detail.content
+      if (detail.text !== undefined && !email.value.text) email.value.text = detail.text
+      if (detail.recipient !== undefined) email.value.recipient = detail.recipient
+      if (detail.cc !== undefined) email.value.cc = detail.cc
+      if (detail.bcc !== undefined) email.value.bcc = detail.bcc
+      if (detail.attList && (!email.value.attList || email.value.attList.length === 0)) {
+        email.value.attList = detail.attList
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load email details:', err)
+  } finally {
+    loadingDetail.value = false
+  }
+}
+
 onMounted(() => {
   window.addEventListener('resize', handleResize);
   if (emailStore.contentData.showUnread && email.value.unread === EmailUnreadEnum.UNREAD) {
@@ -222,11 +261,14 @@ onMounted(() => {
   }
 })
 
-// Reset image / tracker state whenever a different email is opened
+// Reset image / tracker state and fetch detail if needed whenever an email is opened
 watch(() => email.value?.emailId, () => {
   imagesAllowed.value = false
   clientBlockedCount.value = 0
-})
+  if (email.value?.emailId) {
+    loadDetail(email.value)
+  }
+}, { immediate: true })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
