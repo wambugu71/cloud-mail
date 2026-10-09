@@ -23,6 +23,7 @@ import { att } from '../entity/att';
 import telegramService from './telegram-service';
 import pushService from './push-service';
 import trackerUtils from '../utils/tracker-utils';
+import userContext from '../security/user-context';
 
 const emailService = {
 
@@ -166,9 +167,6 @@ const emailService = {
 			...item,
 			isStar: item.starId != null ? 1 : 0
 		}));
-
-
-		await this.emailAddAtt(c, list);
 
 		if (!latestEmail) {
 			latestEmail = {
@@ -604,14 +602,38 @@ const emailService = {
 
 	async latest(c, params, userId) {
 		let { emailId, accountId, allReceive } = params;
+		emailId = Number(emailId);
+		if (!emailId || isNaN(emailId) || emailId <= 0) {
+			return [];
+		}
 		allReceive = Number(allReceive);
 
 		if (isNaN(allReceive)) {
 			let accountRow = await accountService.selectById(c, accountId);
-			allReceive = accountRow.allReceive;
+			allReceive = accountRow?.allReceive || 0;
 		}
 
-		let list = await orm(c).select({...email}).from(email)
+		const projection = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			name: email.name,
+			accountId: email.accountId,
+			userId: email.userId,
+			subject: email.subject,
+			code: email.code,
+			text: email.text,
+			content: sql`NULL`,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			status: email.status,
+			message: email.message,
+			unread: email.unread,
+			createTime: email.createTime,
+			isDel: email.isDel
+		};
+
+		let list = await orm(c).select(projection).from(email)
 			.leftJoin(
 				account,
 				eq(account.accountId, email.accountId)
@@ -626,16 +648,15 @@ const emailService = {
 					eq(email.type, emailConst.type.RECEIVE)
 				))
 			.orderBy(desc(email.emailId))
-			.limit(20);
-
-		await this.emailAddAtt(c, list);
+			.limit(20)
+			.all();
 
 		return list;
 	},
 
 	async detail(c, emailId, userId) {
-		let userRow = await userService.selectById(c, userId);
-		const isAdmin = c.env.admin === userRow?.email;
+		const currentUser = userContext.getUser(c);
+		const isAdmin = c.env.admin && currentUser?.email ? c.env.admin === currentUser.email : false;
 
 		const whereCondition = isAdmin
 			? and(eq(email.emailId, emailId), eq(email.isDel, isDel.NORMAL))
@@ -731,6 +752,25 @@ const emailService = {
 		return result;
 	},
 
+	async selectUserEmailStatsList(c, userIds) {
+		if (!userIds || userIds.length === 0) return [];
+		const result = await orm(c)
+			.select({
+				userId: email.userId,
+				receiveCount: sql`count(case when ${email.type} = ${emailConst.type.RECEIVE} and ${email.isDel} = ${isDel.NORMAL} then 1 end)`,
+				delReceiveCount: sql`count(case when ${email.type} = ${emailConst.type.RECEIVE} and ${email.isDel} = ${isDel.DELETE} then 1 end)`,
+				sendCount: sql`count(case when ${email.type} = ${emailConst.type.SEND} and ${email.isDel} = ${isDel.NORMAL} then 1 end)`,
+				delSendCount: sql`count(case when ${email.type} = ${emailConst.type.SEND} and ${email.isDel} = ${isDel.DELETE} then 1 end)`,
+			})
+			.from(email)
+			.where(and(
+				inArray(email.userId, userIds),
+				ne(email.status, emailConst.status.SAVING),
+			))
+			.groupBy(email.userId);
+		return result;
+	},
+
 	async allList(c, params) {
 
 		let { emailId, size, name, subject, accountEmail, userEmail, type, timeSort } = params;
@@ -803,7 +843,28 @@ const emailService = {
 			conditions.unshift(lt(email.emailId, emailId));
 		}
 
-		const query = orm(c).select({ ...email, userEmail: user.email })
+		const projection = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			name: email.name,
+			accountId: email.accountId,
+			userId: email.userId,
+			subject: email.subject,
+			code: email.code,
+			text: email.text,
+			content: sql`NULL`,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			status: email.status,
+			message: email.message,
+			unread: email.unread,
+			createTime: email.createTime,
+			isDel: email.isDel,
+			userEmail: user.email
+		};
+
+		const query = orm(c).select(projection)
 			.from(email)
 			.leftJoin(user, eq(email.userId, user.userId))
 			.where(and(...conditions));
@@ -831,8 +892,6 @@ const emailService = {
 
 		let [list, totalRow, latestEmail] = await Promise.all([listQuery, totalQuery, latestEmailQuery]);
 
-		await this.emailAddAtt(c, list);
-
 		if (!latestEmail) {
 			latestEmail = {
 				emailId: 0,
@@ -841,14 +900,39 @@ const emailService = {
 			}
 		}
 
-		return { list: list, total: totalRow.total, latestEmail };
+		return { list, total: totalRow ? totalRow.total : undefined, latestEmail };
 	},
 
 	async allEmailLatest(c, params) {
 
-		const { emailId } = params;
+		let { emailId } = params;
+		emailId = Number(emailId);
+		if (!emailId || isNaN(emailId) || emailId <= 0) {
+			return [];
+		}
 
-		let list = await orm(c).select({...email, userEmail: user.email}).from(email)
+		const projection = {
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			name: email.name,
+			accountId: email.accountId,
+			userId: email.userId,
+			subject: email.subject,
+			code: email.code,
+			text: email.text,
+			content: sql`NULL`,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			status: email.status,
+			message: email.message,
+			unread: email.unread,
+			createTime: email.createTime,
+			isDel: email.isDel,
+			userEmail: user.email
+		};
+
+		let list = await orm(c).select(projection).from(email)
 			.leftJoin(user, eq(email.userId, user.userId))
 			.where(
 				and(
@@ -857,9 +941,8 @@ const emailService = {
 					ne(email.status, emailConst.status.SAVING)
 				))
 			.orderBy(desc(email.emailId))
-			.limit(20);
-
-		await this.emailAddAtt(c, list);
+			.limit(20)
+			.all();
 
 		return list;
 	},

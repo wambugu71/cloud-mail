@@ -27,3 +27,7 @@ export function setBlackList(form) {
 export function settingCleanEmails() {
     return http.post('/setting/cleanEmails')
 }
+
+export function testWebhook(params) {
+    return http.post('/setting/testWebhook', params)
+}

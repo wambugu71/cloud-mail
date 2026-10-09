@@ -139,6 +139,10 @@ const settingService = {
 			params.aiCodeFilter = params.aiCodeFilter + '';
 		}
 
+		if (typeof params.webhookHeaders === 'object' && params.webhookHeaders !== null) {
+			params.webhookHeaders = JSON.stringify(params.webhookHeaders);
+		}
+
 		params.resendTokens = JSON.stringify(resendTokens);
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);

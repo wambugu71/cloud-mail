@@ -165,35 +165,28 @@ const userService = {
 
 		const types = [...new Set(list.map(user => user.type))];
 
-		const [emailCounts, delEmailCounts, sendCounts, delSendCounts, accountCounts, delAccountCounts, roleList] = await Promise.all([
-			emailService.selectUserEmailCountList(c, userIds, emailConst.type.RECEIVE),
-			emailService.selectUserEmailCountList(c, userIds, emailConst.type.RECEIVE, isDel.DELETE),
-			emailService.selectUserEmailCountList(c, userIds, emailConst.type.SEND),
-			emailService.selectUserEmailCountList(c, userIds, emailConst.type.SEND, isDel.DELETE),
-			accountService.selectUserAccountCountList(c, userIds),
-			accountService.selectUserAccountCountList(c, userIds, isDel.DELETE),
-			roleService.selectByIdsHasPermKey(c, types,'email:send')
+		const [emailStats, accountStats, roleList] = await Promise.all([
+			emailService.selectUserEmailStatsList(c, userIds),
+			accountService.selectUserAccountStatsList(c, userIds),
+			roleService.selectByIdsHasPermKey(c, types, 'email:send')
 		]);
 
-		const receiveMap = Object.fromEntries(emailCounts.map(item => [item.userId, item.count]));
-		const sendMap = Object.fromEntries(sendCounts.map(item => [item.userId, item.count]));
-		const accountMap = Object.fromEntries(accountCounts.map(item => [item.userId, item.count]));
-
-		const delReceiveMap = Object.fromEntries(delEmailCounts.map(item => [item.userId, item.count]));
-		const delSendMap = Object.fromEntries(delSendCounts.map(item => [item.userId, item.count]));
-		const delAccountMap = Object.fromEntries(delAccountCounts.map(item => [item.userId, item.count]));
+		const emailStatsMap = Object.fromEntries(emailStats.map(item => [item.userId, item]));
+		const accountStatsMap = Object.fromEntries(accountStats.map(item => [item.userId, item]));
 
 		for (const user of list) {
 
 			const userId = user.userId;
+			const eStat = emailStatsMap[userId];
+			const aStat = accountStatsMap[userId];
 
-			user.receiveEmailCount = receiveMap[userId] || 0;
-			user.sendEmailCount = sendMap[userId] || 0;
-			user.accountCount = accountMap[userId] || 0;
+			user.receiveEmailCount = Number(eStat?.receiveCount || 0);
+			user.sendEmailCount = Number(eStat?.sendCount || 0);
+			user.accountCount = Number(aStat?.accountCount || 0);
 
-			user.delReceiveEmailCount = delReceiveMap[userId] || 0;
-			user.delSendEmailCount = delSendMap[userId] || 0;
-			user.delAccountCount = delAccountMap[userId] || 0;
+			user.delReceiveEmailCount = Number(eStat?.delReceiveCount || 0);
+			user.delSendEmailCount = Number(eStat?.delSendCount || 0);
+			user.delAccountCount = Number(aStat?.delAccountCount || 0);
 
 			const roleIndex = roleList.findIndex(roleRow => user.type === roleRow.roleId);
 			let sendAction = {};

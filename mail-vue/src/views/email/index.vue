@@ -119,7 +119,7 @@ function jumpContent(email) {
   
   // On mobile, navigate to the separate message screen. On desktop, the Two-Pane handles it.
   if (isMobile.value) {
-    router.push('/message')
+    router.push({ path: '/message', query: { emailId: email.emailId } })
   }
 }
 

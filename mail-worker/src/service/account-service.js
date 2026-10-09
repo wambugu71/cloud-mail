@@ -196,6 +196,20 @@ const accountService = {
 		return result;
 	},
 
+	async selectUserAccountStatsList(c, userIds) {
+		if (!userIds || userIds.length === 0) return [];
+		const result = await orm(c)
+			.select({
+				userId: account.userId,
+				accountCount: sql`count(case when ${account.isDel} = ${isDel.NORMAL} then 1 end)`,
+				delAccountCount: sql`count(case when ${account.isDel} = ${isDel.DELETE} then 1 end)`,
+			})
+			.from(account)
+			.where(inArray(account.userId, userIds))
+			.groupBy(account.userId);
+		return result;
+	},
+
 	async countUserAccount(c, userId) {
 		const { num } = await orm(c).select({num: count()}).from(account).where(and(eq(account.userId, userId),eq(account.isDel, isDel.NORMAL))).get();
 		return num;

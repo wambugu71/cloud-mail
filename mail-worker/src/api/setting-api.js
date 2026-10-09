@@ -2,6 +2,7 @@ import app from '../hono/hono';
 import result from '../model/result';
 import settingService from '../service/setting-service';
 import emailService from '../service/email-service';
+import webhookService from '../service/webhook-service';
 
 app.put('/setting/set', async (c) => {
 	await settingService.set(c, await c.req.json());
@@ -35,6 +36,11 @@ app.put('/setting/setBlacklist', async (c) => {
 
 app.post('/setting/cleanEmails', async (c) => {
 	const data = await emailService.autoCleanEmails(c);
+	return c.json(result.ok(data));
+});
+
+app.post('/setting/testWebhook', async (c) => {
+	const data = await webhookService.testWebhook(c, await c.req.json());
 	return c.json(result.ok(data));
 });
 

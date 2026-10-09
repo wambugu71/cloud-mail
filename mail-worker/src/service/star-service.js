@@ -5,7 +5,6 @@ import BizError from '../error/biz-error';
 import { and, desc, eq, lt, sql, inArray } from 'drizzle-orm';
 import email from '../entity/email';
 import { isDel } from '../const/entity-const';
-import attService from "./att-service";
 import { t } from '../i18n/i18n'
 const starService = {
 
@@ -49,11 +48,29 @@ const starService = {
 			emailId = 9999999999;
 		}
 
-		const list = await orm(c).select({
+		const projection = {
 			isStar: sql`1`.as('isStar'),
-			starId: star.starId
-			, ...email
-		}).from(star)
+			starId: star.starId,
+			emailId: email.emailId,
+			sendEmail: email.sendEmail,
+			name: email.name,
+			accountId: email.accountId,
+			userId: email.userId,
+			subject: email.subject,
+			code: email.code,
+			text: email.text,
+			content: sql`NULL`,
+			toEmail: email.toEmail,
+			toName: email.toName,
+			type: email.type,
+			status: email.status,
+			message: email.message,
+			unread: email.unread,
+			createTime: email.createTime,
+			isDel: email.isDel
+		};
+
+		const list = await orm(c).select(projection).from(star)
 			.leftJoin(email, eq(email.emailId, star.emailId))
 			.where(
 				and(
@@ -63,15 +80,6 @@ const starService = {
 			.orderBy(desc(star.emailId))
 			.limit(size)
 			.all();
-
-		const emailIds = list.map(item => item.emailId);
-
-		const attsList = await attService.selectByEmailIds(c, emailIds);
-
-		list.forEach(emailRow => {
-			const atts = attsList.filter(attsRow => attsRow.emailId === emailRow.emailId);
-			emailRow.attList = atts;
-		});
 
 		return { list };
 	},

@@ -31,8 +31,25 @@ const dbInit = {
 		await this.v2_10DB(c);
 		await this.v3_0DB(c);
 		await this.v3_1DB(c);
+		await this.v3_2DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_2DB(c) {
+		const alterStatements = [
+			`ALTER TABLE setting ADD COLUMN webhook_url TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN webhook_status INTEGER NOT NULL DEFAULT 1;`,
+			`ALTER TABLE setting ADD COLUMN webhook_secret TEXT NOT NULL DEFAULT '';`,
+			`ALTER TABLE setting ADD COLUMN webhook_headers TEXT NOT NULL DEFAULT '{}';`
+		];
+		for (const sql of alterStatements) {
+			try {
+				await c.env.db.prepare(sql).run();
+			} catch (e) {
+				console.warn(`跳过字段：${e.message}`);
+			}
+		}
 	},
 
 	async v3_1DB(c) {

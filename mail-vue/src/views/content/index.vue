@@ -1,5 +1,5 @@
 <template>
-  <div class="box">
+  <div class="box" v-if="email">
     <!-- Header Actions -->
     <div class="header-actions">
       <div class="left-actions">
@@ -116,7 +116,7 @@
           </el-scrollbar>
 
           <!-- Attachments -->
-          <div class="att" v-if="email.attList.length > 0">
+          <div class="att" v-if="email.attList && email.attList.length > 0">
             <h4 class="att-title">
               <Icon icon="material-symbols:attachment" width="18" height="18" />
               {{$t('attCount',{total: email.attList.length})}} Attachments
@@ -160,11 +160,14 @@
         @close="showPreview = false"
     />
   </div>
+  <div class="box empty-box" v-else>
+    <el-empty :description="$t('selectEmailToRead') || 'Select an email to read'" />
+  </div>
 </template>
 <script setup>
 import ShadowHtml from '@/components/shadow-html/index.vue'
 import {reactive, ref, computed, watch, onMounted, onUnmounted} from "vue";
-import {useRouter} from 'vue-router'
+import {useRouter, useRoute} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {emailDelete, emailRead, emailDetail} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
@@ -188,6 +191,7 @@ const accountStore = useAccountStore();
 const userStore = useUserStore();
 const emailStore = useEmailStore();
 const router = useRouter()
+const route = useRoute()
 // computed so the view always reflects whatever email is selected in the store
 const email = computed(() => emailStore.contentData.email)
 const showPreview = ref(false)
@@ -232,18 +236,15 @@ function onRemoteImagesFound(count) {
 
 async function loadDetail(targetEmail) {
   if (!targetEmail?.emailId) return
-  if (targetEmail.content) return
+  if (targetEmail.content && targetEmail.attList !== undefined) return
   try {
     loadingDetail.value = true
     const detail = await emailDetail(targetEmail.emailId)
-    if (detail && email.value?.emailId === targetEmail.emailId) {
-      if (detail.content !== undefined) email.value.content = detail.content
-      if (detail.text !== undefined && !email.value.text) email.value.text = detail.text
-      if (detail.recipient !== undefined) email.value.recipient = detail.recipient
-      if (detail.cc !== undefined) email.value.cc = detail.cc
-      if (detail.bcc !== undefined) email.value.bcc = detail.bcc
-      if (detail.attList && (!email.value.attList || email.value.attList.length === 0)) {
-        email.value.attList = detail.attList
+    if (detail && (email.value?.emailId === targetEmail.emailId || !email.value)) {
+      emailStore.contentData.email = {
+        ...(email.value || {}),
+        ...detail,
+        attList: detail.attList || []
       }
     }
   } catch (err) {
@@ -253,9 +254,29 @@ async function loadDetail(targetEmail) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('resize', handleResize);
-  if (emailStore.contentData.showUnread && email.value.unread === EmailUnreadEnum.UNREAD) {
+  const qEmailId = Number(route?.query?.emailId);
+  if (qEmailId && (!email.value || email.value.emailId !== qEmailId)) {
+    try {
+      loadingDetail.value = true;
+      const detail = await emailDetail(qEmailId);
+      if (detail) {
+        emailStore.contentData.email = {
+          ...detail,
+          attList: detail.attList || []
+        };
+      }
+    } catch (e) {
+      console.error('Failed to load email details from query:', e);
+    } finally {
+      loadingDetail.value = false;
+    }
+  } else if (email.value?.emailId && (!email.value.content || email.value.attList === undefined)) {
+    loadDetail(email.value);
+  }
+
+  if (emailStore.contentData.showUnread && email.value?.unread === EmailUnreadEnum.UNREAD) {
     email.value.unread = EmailUnreadEnum.READ;
     emailRead([email.value.emailId]);
   }
@@ -809,4 +830,11 @@ const handleDelete = () => {
 
 
 
+.empty-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
 </style>

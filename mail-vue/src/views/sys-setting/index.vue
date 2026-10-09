@@ -298,6 +298,15 @@
                 </div>
               </div>
               <div class="setting-item">
+                <div><span>{{ $t('webhookPush') }}</span></div>
+                <div class="forward">
+                  <span>{{ setting.webhookStatus === 0 ? $t('enabled') : $t('disabled') }}</span>
+                  <el-button class="opt-button" size="small" type="primary" @click="openWebhookSetting">
+                    <Icon icon="fluent:settings-48-regular" width="18" height="18"/>
+                  </el-button>
+                </div>
+              </div>
+              <div class="setting-item">
                 <div><span>{{ $t('otherEmail') }}</span></div>
                 <div class="forward">
                   <span>{{ setting.forwardStatus === 0 ? $t('enabled') : $t('disabled') }}</span>
@@ -613,6 +622,58 @@
         </template>
       </el-dialog>
       <el-dialog
+          v-model="webhookSettingShow"
+          class="forward-dialog"
+          width="480px"
+      >
+        <template #header>
+          <div class="forward-head">
+            <span class="forward-set-title">{{ $t('webhookPush') }}</span>
+            <el-tooltip effect="dark" :content="$t('webhookPushDesc')">
+              <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+            </el-tooltip>
+          </div>
+        </template>
+        <div class="forward-set-body">
+          <div style="margin-bottom: 12px;">
+            <span style="font-size: 13px; color: var(--el-text-color-regular); margin-bottom: 6px; display: block; font-weight: 500;">{{ $t('webhookUrl') }}</span>
+            <el-input :placeholder="$t('webhookUrlDesc')" v-model="webhookUrl" />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <span style="font-size: 13px; color: var(--el-text-color-regular); margin-bottom: 6px; display: block; font-weight: 500;">{{ $t('webhookSecret') }}</span>
+            <el-input :placeholder="$t('webhookSecretDesc')" v-model="webhookSecret" show-password />
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 13px; color: var(--el-text-color-regular); margin-bottom: 6px; display: block; font-weight: 500;">{{ $t('webhookHeaders') }} (JSON)</span>
+            <el-input
+              type="textarea"
+              :rows="3"
+              :placeholder="$t('webhookHeadersDesc')"
+              v-model="webhookHeaders"
+            />
+          </div>
+        </div>
+        <template #footer>
+          <div class="dialog-footer" style="display: flex; justify-content: space-between; align-items: center;">
+            <el-switch
+              v-model="webhookStatus"
+              :active-value="0"
+              :inactive-value="1"
+              :active-text="$t('enable')"
+              :inactive-text="$t('disable')"
+            />
+            <div style="display: flex; gap: 8px;">
+              <el-button :loading="webhookTesting" @click="handleTestWebhook">
+                {{ $t('testWebhook') }}
+              </el-button>
+              <el-button :loading="settingLoading" type="primary" @click="webhookSave">
+                {{ $t('save') }}
+              </el-button>
+            </div>
+          </div>
+        </template>
+      </el-dialog>
+      <el-dialog
           v-model="thirdEmailShow"
           class="forward-dialog"
       >
@@ -845,7 +906,7 @@
 
 <script setup>
 import {computed, defineOptions, reactive, ref} from "vue";
-import {deleteBackground, setBackground, setBlackList, settingCleanEmails, settingQuery, settingSet} from "@/request/setting.js";
+import {deleteBackground, setBackground, setBlackList, settingCleanEmails, settingQuery, settingSet, testWebhook} from "@/request/setting.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
@@ -882,6 +943,7 @@ const aiCodeFilterShow = ref(false)
 const r2DomainShow = ref(false)
 const turnstileShow = ref(false)
 const tgSettingShow = ref(false)
+const webhookSettingShow = ref(false)
 const noticePopupShow = ref(false)
 const thirdEmailShow = ref(false)
 const forwardRulesShow = ref(false)
@@ -1012,6 +1074,11 @@ const ruleEmail = ref([])
 const tgMsgFrom = ref('')
 const tgMsgTo = ref('')
 const tgMsgText = ref('')
+const webhookUrl = ref('')
+const webhookSecret = ref('')
+const webhookHeaders = ref('')
+const webhookStatus = ref(1)
+const webhookTesting = ref(false)
 
 const tgMsgFromOption = [{label: t('show'), value: 'show'}, {label: t('hide'), value: 'hide'}, {label: t('onlyName'), value:'only-name'}]
 const tgMsgToOption = [{label: t('show'), value: 'show'}, {label: t('hide'), value: 'hide'}]
@@ -1144,6 +1211,16 @@ function openTgSetting() {
     tgChatId.value.push(...list)
   }
   tgSettingShow.value = true
+}
+
+function openWebhookSetting() {
+  webhookStatus.value = setting.value.webhookStatus ?? 1
+  webhookUrl.value = setting.value.webhookUrl || ''
+  webhookSecret.value = setting.value.webhookSecret || ''
+  webhookHeaders.value = typeof setting.value.webhookHeaders === 'string'
+    ? setting.value.webhookHeaders
+    : (setting.value.webhookHeaders ? JSON.stringify(setting.value.webhookHeaders, null, 2) : '')
+  webhookSettingShow.value = true
 }
 
 function openNoticePopupSetting() {
@@ -1281,6 +1358,53 @@ function tgBotSave() {
     tgMsgFrom: tgMsgFrom.value,
     tgMsgText: tgMsgText.value,
     tgMsgTo: tgMsgTo.value
+  }
+  editSetting(form)
+}
+
+async function handleTestWebhook() {
+  if (!webhookUrl.value) {
+    ElMessage({ message: t('webhookUrlRequired') || 'Webhook URL is required', type: 'warning', plain: true })
+    return
+  }
+  let parsedHeaders = null
+  if (webhookHeaders.value && webhookHeaders.value.trim()) {
+    try {
+      parsedHeaders = JSON.parse(webhookHeaders.value.trim())
+    } catch {
+      ElMessage({ message: t('webhookHeadersInvalid') || 'Custom headers must be a valid JSON object', type: 'error', plain: true })
+      return
+    }
+  }
+  webhookTesting.value = true
+  try {
+    const res = await testWebhook({
+      webhookUrl: webhookUrl.value,
+      webhookSecret: webhookSecret.value,
+      webhookHeaders: parsedHeaders || webhookHeaders.value
+    })
+    ElMessage({ message: t('webhookTestSuccess') || `Webhook test passed (${res?.status || 200})`, type: 'success', plain: true })
+  } catch (e) {
+    ElMessage({ message: e.message || 'Webhook test failed', type: 'error', plain: true })
+  } finally {
+    webhookTesting.value = false
+  }
+}
+
+function webhookSave() {
+  if (webhookHeaders.value && webhookHeaders.value.trim()) {
+    try {
+      JSON.parse(webhookHeaders.value.trim())
+    } catch {
+      ElMessage({ message: t('webhookHeadersInvalid') || 'Custom headers must be a valid JSON object', type: 'error', plain: true })
+      return
+    }
+  }
+  const form = {
+    webhookUrl: webhookUrl.value,
+    webhookSecret: webhookSecret.value,
+    webhookHeaders: webhookHeaders.value,
+    webhookStatus: webhookStatus.value
   }
   editSetting(form)
 }
@@ -1552,6 +1676,7 @@ function editSetting(settingForm, refreshStatus = true) {
     resendTokenFormShow.value = false
     turnstileShow.value = false
     tgSettingShow.value = false
+    webhookSettingShow.value = false
     thirdEmailShow.value = false
     forwardRulesShow.value = false
     addVerifyCountShow.value = false

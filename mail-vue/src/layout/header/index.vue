@@ -306,7 +306,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
   letter-spacing: -0.01em;
 }
 
@@ -342,7 +342,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
     outline: none;
     font-size: 13px;
     color: var(--el-text-color-primary);
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
 
     &::placeholder { color: var(--el-text-color-placeholder); }
   }
@@ -392,7 +392,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
     font-size: 12px;
     font-weight: 600;
     color: var(--el-text-color-secondary);
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
     white-space: nowrap;
   }
 
@@ -415,7 +415,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
       padding: 8px 12px;
       font-size: 13px;
       color: var(--el-text-color-primary);
-      font-family: 'Manrope', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
       border-radius: 7px;
       cursor: pointer;
       transition: background 0.1s;
@@ -498,7 +498,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
 }
 
 .chevron {
@@ -526,14 +526,14 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
     align-items: center;
     justify-content: center;
     margin-bottom: 6px;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
   }
 
   .dropdown-name {
     font-size: 14px;
     font-weight: 700;
     color: var(--el-text-color-primary);
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
     max-width: 200px;
     overflow: hidden;
     white-space: nowrap;
@@ -548,7 +548,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
     &:hover { color: var(--el-color-primary); }
   }
 
@@ -569,7 +569,7 @@ function formatName(email) { return email?.[0]?.toUpperCase() || ''; }
       justify-content: space-between;
       font-size: 12px;
       color: var(--regular-text-color);
-      font-family: 'Manrope', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
     }
 
     .stat-label { color: var(--el-text-color-secondary); }

@@ -3,15 +3,21 @@
     <!-- App Header -->
     <div class="sidebar-header">
       <div class="app-brand">
-        <Icon icon="mdi:email-outline" width="22" height="22" class="brand-icon" />
-        <span class="brand-name">{{ settingStore.settings.title }}</span>
+        <div class="brand-logo-badge">
+          <Icon icon="material-symbols:mail-rounded" width="20" height="20" class="brand-icon" />
+        </div>
+        <span class="brand-name">{{ settingStore.settings.title || 'Cloud Mail' }}</span>
       </div>
+
       <!-- User Info -->
       <div class="user-info" v-if="userStore.user.email">
-        <div class="user-avatar">{{ formatName(userStore.user.email) }}</div>
+        <div class="user-avatar-wrap">
+          <div class="user-avatar">{{ formatName(userStore.user.email) }}</div>
+          <span class="user-status-dot"></span>
+        </div>
         <div class="user-meta">
-          <span class="user-name">{{ userStore.user.name }}</span>
-          <span class="user-email">{{ userStore.user.email }}</span>
+          <span class="user-name">{{ userStore.user.name || 'User' }}</span>
+          <span class="user-email" :title="userStore.user.email">{{ userStore.user.email }}</span>
         </div>
       </div>
     </div>
@@ -27,57 +33,94 @@
     <!-- Main Navigation -->
     <nav class="nav-main">
       <a class="nav-item" :class="route.meta.name === 'email' ? 'nav-active' : ''" @click="go('email')">
-        <Icon icon="hugeicons:mailbox-01" width="20" height="20" />
-        <span>{{ $t('inbox') }}</span>
-      </a>
-      <a class="nav-item" :class="route.meta.name === 'send' ? 'nav-active' : ''" @click="go('send')" v-perm="'email:send'">
-        <Icon icon="cil:send" width="20" height="20" />
-        <span>{{ $t('sent') }}</span>
-      </a>
-      <a class="nav-item" :class="route.meta.name === 'draft' ? 'nav-active' : ''" @click="go('draft')" v-perm="'email:send'">
-        <Icon icon="ep:document" width="19" height="19" />
-        <span>{{ $t('drafts') }}</span>
-      </a>
-      <a class="nav-item" :class="route.meta.name === 'star' ? 'nav-active' : ''" @click="go('star')">
-        <Icon icon="solar:star-line-duotone" width="20" height="20" />
-        <span>{{ $t('starred') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="hugeicons:mailbox-01" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('inbox') }}</span>
+        <span class="nav-badge" v-if="uiStore.asideCount.email > 0">
+          {{ uiStore.asideCount.email > 99 ? '99+' : uiStore.asideCount.email }}
+        </span>
       </a>
 
-      <!-- Admin section -->
+      <a class="nav-item" :class="route.meta.name === 'send' ? 'nav-active' : ''" @click="go('send')" v-perm="'email:send'">
+        <div class="nav-item-icon-wrap">
+          <Icon icon="cil:send" width="18" height="18" />
+        </div>
+        <span class="nav-label">{{ $t('sent') }}</span>
+      </a>
+
+      <a class="nav-item" :class="route.meta.name === 'draft' ? 'nav-active' : ''" @click="go('draft')" v-perm="'email:send'">
+        <div class="nav-item-icon-wrap">
+          <Icon icon="ep:document" width="18" height="18" />
+        </div>
+        <span class="nav-label">{{ $t('drafts') }}</span>
+      </a>
+
+      <a class="nav-item" :class="route.meta.name === 'star' ? 'nav-active' : ''" @click="go('star')">
+        <div class="nav-item-icon-wrap">
+          <Icon icon="solar:star-line-duotone" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('starred') }}</span>
+      </a>
+
+      <!-- Admin Section -->
       <div class="nav-section-label" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">
         {{ $t('manage') }}
       </div>
+
       <a class="nav-item" :class="route.meta.name === 'analysis' ? 'nav-active' : ''" @click="go('analysis')" v-perm="'analysis:query'">
-        <Icon icon="fluent:data-pie-20-regular" width="20" height="20" />
-        <span>{{ $t('analytics') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="fluent:data-pie-20-regular" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('analytics') }}</span>
       </a>
+
       <a class="nav-item" :class="route.meta.name === 'user' ? 'nav-active' : ''" @click="go('user')" v-perm="'user:query'">
-        <Icon icon="si:user-alt-2-line" width="20" height="20" />
-        <span>{{ $t('allUsers') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="si:user-alt-2-line" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('allUsers') }}</span>
       </a>
+
       <a class="nav-item" :class="route.meta.name === 'all-email' ? 'nav-active' : ''" @click="go('all-email')" v-perm="'all-email:query'">
-        <Icon icon="fluent:mail-list-28-regular" width="20" height="20" />
-        <span>{{ $t('allMail') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="fluent:mail-list-28-regular" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('allMail') }}</span>
+        <span class="nav-badge" v-if="uiStore.asideCount.sysEmail > 0">
+          {{ uiStore.asideCount.sysEmail > 99 ? '99+' : uiStore.asideCount.sysEmail }}
+        </span>
       </a>
+
       <a class="nav-item" :class="route.meta.name === 'role' ? 'nav-active' : ''" @click="go('role')" v-perm="'role:query'">
-        <Icon icon="fluent:lock-closed-16-regular" width="20" height="20" />
-        <span>{{ $t('permissions') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="fluent:lock-closed-16-regular" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('permissions') }}</span>
       </a>
+
       <a class="nav-item" :class="route.meta.name === 'reg-key' ? 'nav-active' : ''" @click="go('reg-key')" v-perm="'reg-key:query'">
-        <Icon icon="fluent:fingerprint-20-filled" width="20" height="20" />
-        <span>{{ $t('inviteCode') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="fluent:fingerprint-20-filled" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('inviteCode') }}</span>
       </a>
+
       <a class="nav-item" :class="route.meta.name === 'sys-setting' ? 'nav-active' : ''" @click="go('sys-setting')" v-perm="'setting:query'">
-        <Icon icon="eos-icons:system-ok-outlined" width="20" height="20" />
-        <span>{{ $t('SystemSettings') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="eos-icons:system-ok-outlined" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('SystemSettings') }}</span>
       </a>
     </nav>
 
     <!-- Footer Navigation -->
     <div class="nav-footer">
       <a class="nav-item" :class="route.meta.name === 'setting' ? 'nav-active' : ''" @click="go('setting')">
-        <Icon icon="fluent:settings-48-regular" width="20" height="20" />
-        <span>{{ $t('settings') }}</span>
+        <div class="nav-item-icon-wrap">
+          <Icon icon="fluent:settings-48-regular" width="19" height="19" />
+        </div>
+        <span class="nav-label">{{ $t('settings') }}</span>
       </a>
     </div>
   </div>
@@ -122,36 +165,48 @@ function formatName(email) {
   flex-direction: column;
   height: 100%;
   width: 260px;
-  background: #0f172a;
+  background: linear-gradient(180deg, #0f172a 0%, #0b1120 100%);
   overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .sidebar-header {
-  padding: 20px 16px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
 }
 
 .app-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 11px;
+  margin-bottom: 14px;
 
-  .brand-icon {
-    color: #60a5fa;
+  .brand-logo-badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
     flex-shrink: 0;
+
+    .brand-icon {
+      color: #ffffff;
+    }
   }
 
   .brand-name {
-    font-size: 17px;
-    font-weight: 800;
+    font-size: 16px;
+    font-weight: 700;
     color: #ffffff;
     letter-spacing: -0.02em;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-family: 'Manrope', -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
   }
 }
 
@@ -160,23 +215,46 @@ function formatName(email) {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+.user-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .user-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: #fff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.user-status-dot {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border: 2px solid #0f172a;
+  border-radius: 50%;
 }
 
 .user-meta {
@@ -191,21 +269,21 @@ function formatName(email) {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   }
 
   .user-email {
     font-size: 11px;
-    color: #64748b;
+    color: #94a3b8;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'Manrope', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 }
 
 .compose-wrap {
-  padding: 14px 12px 10px;
+  padding: 12px 14px 8px;
   flex-shrink: 0;
 }
 
@@ -216,86 +294,134 @@ function formatName(email) {
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  background: #2563eb;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: #ffffff;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-  font-family: 'Manrope', sans-serif;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
 
   &:hover {
-    background: #1d4ed8;
+    background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
   }
 
   &:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 }
 
 .nav-main {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 8px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 .nav-section-label {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #475569;
-  padding: 12px 12px 4px;
-  font-family: 'Manrope', sans-serif;
+  color: #64748b;
+  padding: 14px 12px 6px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border-radius: 8px;
+  gap: 11px;
+  padding: 8.5px 12px;
+  border-radius: 10px;
   cursor: pointer;
   color: #94a3b8;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.15s ease;
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   text-decoration: none;
   user-select: none;
+  position: relative;
+
+  .nav-item-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .nav-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   &:hover {
-    color: #e2e8f0;
-    background: rgba(255, 255, 255, 0.06);
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   &:active {
-    transform: scale(0.97);
-    opacity: 0.85;
+    transform: scale(0.98);
   }
 }
 
 .nav-active {
-  background: #2563eb !important;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.95)) !important;
   color: #ffffff !important;
   font-weight: 600;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #ffffff;
+    opacity: 0.9;
+  }
 
   &:hover {
-    background: #1d4ed8 !important;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
   }
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1.5px 7px;
+  border-radius: 999px;
+  line-height: 1.3;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+}
+
+.nav-active .nav-badge {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .nav-footer {
   flex-shrink: 0;
-  padding: 8px 8px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 8px 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   gap: 2px;

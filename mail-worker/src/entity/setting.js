@@ -53,6 +53,10 @@ export const setting = sqliteTable('setting', {
 	aiCode: integer('ai_code').default(1).notNull(),
 	aiCodeFilter: text('ai_code_filter').default('').notNull(),
 	autoCleanDays: integer('auto_clean_days').default(0).notNull(),
-	subaddress: integer('subaddress').default(1).notNull()
+	subaddress: integer('subaddress').default(1).notNull(),
+	webhookUrl: text('webhook_url').default('').notNull(),
+	webhookStatus: integer('webhook_status').default(1).notNull(),
+	webhookSecret: text('webhook_secret').default('').notNull(),
+	webhookHeaders: text('webhook_headers').default('{}').notNull()
 });
 export default setting

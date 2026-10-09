@@ -12,6 +12,7 @@ import userService from '../service/user-service';
 import telegramService from '../service/telegram-service';
 import pushService from '../service/push-service';
 import aiService from '../service/ai-service';
+import webhookService from '../service/webhook-service';
 
 export async function email(message, env, ctx) {
 
@@ -32,7 +33,9 @@ export async function email(message, env, ctx) {
 			blackFrom,
 			aiCode,
 			aiCodeFilter,
-			subaddress: subaddressSetting
+			subaddress: subaddressSetting,
+			webhookUrl,
+			webhookStatus
 		} = await settingService.query({ env });
 
 		if (receive === settingConst.receive.CLOSE) {
@@ -180,6 +183,11 @@ export async function email(message, env, ctx) {
 		// Web Push notification to account owner
 		if (account && account.userId > 0) {
 			pushService.notify({ env }, account.userId, emailRow).catch(() => {});
+		}
+
+		// Webhook incoming push
+		if (webhookStatus === settingConst.webhookStatus.OPEN && webhookUrl) {
+			await webhookService.sendEmailToWebhook({ env }, emailRow);
 		}
 
 		//转发到其他邮箱
