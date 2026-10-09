@@ -12,8 +12,108 @@ import userContext from '../security/user-context';
 
 const settingService = {
 
+	async selectSettingRow(c) {
+		try {
+			const row = await orm(c).select().from(setting).get();
+			if (row) return row;
+		} catch (e) {
+			console.warn('Direct ORM select failed, attempting auto-migration:', e.message);
+			const alters = [
+				`ALTER TABLE setting ADD COLUMN black_subject TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN black_content TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN black_from TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN ai_code INTEGER NOT NULL DEFAULT 1;`,
+				`ALTER TABLE setting ADD COLUMN ai_code_filter TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN auto_clean_days INTEGER NOT NULL DEFAULT 0;`,
+				`ALTER TABLE setting ADD COLUMN subaddress INTEGER NOT NULL DEFAULT 1;`,
+				`ALTER TABLE setting ADD COLUMN webhook_url TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN webhook_status INTEGER NOT NULL DEFAULT 1;`,
+				`ALTER TABLE setting ADD COLUMN webhook_secret TEXT NOT NULL DEFAULT '';`,
+				`ALTER TABLE setting ADD COLUMN webhook_headers TEXT NOT NULL DEFAULT '{}';`
+			];
+			for (const sql of alters) {
+				try { await c.env.db.prepare(sql).run(); } catch (_) {}
+			}
+			try {
+				const retryRow = await orm(c).select().from(setting).get();
+				if (retryRow) return retryRow;
+			} catch (retryErr) {
+				console.warn('Retry after migration failed, querying raw table:', retryErr.message);
+				try {
+					const rawRow = await c.env.db.prepare('SELECT * FROM setting LIMIT 1;').first();
+					if (rawRow) {
+						return {
+							register: 0,
+							receive: 0,
+							title: '',
+							manyEmail: 0,
+							addEmail: 0,
+							autoRefresh: 0,
+							addEmailVerify: 1,
+							registerVerify: 1,
+							regVerifyCount: 1,
+							addVerifyCount: 1,
+							send: 1,
+							r2Domain: '',
+							secretKey: '',
+							siteKey: '',
+							regKey: 1,
+							background: '',
+							tgBotToken: '',
+							tgChatId: '',
+							tgBotStatus: 1,
+							forwardEmail: '',
+							forwardStatus: 1,
+							ruleEmail: '',
+							ruleType: 0,
+							loginOpacity: 0.88,
+							resendTokens: '{}',
+							noticeTitle: '',
+							noticeContent: '',
+							noticeType: '',
+							noticeDuration: 0,
+							noticePosition: '',
+							noticeOffset: 0,
+							noticeWidth: 400,
+							notice: 0,
+							noRecipient: 1,
+							loginDomain: 0,
+							bucket: '',
+							region: '',
+							endpoint: '',
+							s3AccessKey: '',
+							s3SecretKey: '',
+							forcePathStyle: 1,
+							customDomain: '',
+							tgMsgFrom: 'only-name',
+							tgMsgTo: 'show',
+							tgMsgText: 'hide',
+							minEmailPrefix: 0,
+							emailPrefixFilter: '',
+							blackSubject: '',
+							blackContent: '',
+							blackFrom: '',
+							aiCode: 1,
+							aiCodeFilter: '',
+							autoCleanDays: 0,
+							subaddress: 1,
+							webhookUrl: '',
+							webhookStatus: 1,
+							webhookSecret: '',
+							webhookHeaders: '{}',
+							...rawRow
+						};
+					}
+				} catch (rawErr) {
+					console.error('Raw select failed:', rawErr.message);
+				}
+			}
+		}
+		return null;
+	},
+
 	async refresh(c) {
-		const settingRow = await orm(c).select().from(setting).get();
+		const settingRow = await this.selectSettingRow(c);
 		if (!settingRow) return;
 		if (typeof settingRow.resendTokens === 'string') {
 			try {
@@ -24,7 +124,7 @@ const settingService = {
 		} else if (!settingRow.resendTokens || typeof settingRow.resendTokens !== 'object') {
 			settingRow.resendTokens = {};
 		}
-		c.set('setting', settingRow);
+		c.set?.('setting', settingRow);
 		await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
 	},
 
@@ -37,7 +137,7 @@ const settingService = {
 		let settingData = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
 
 		if (!settingData) {
-			const settingRow = await orm(c).select().from(setting).get();
+			const settingRow = await this.selectSettingRow(c);
 			if (!settingRow) {
 				throw new BizError('数据库未初始化 Database not initialized.');
 			}
@@ -202,13 +302,24 @@ const settingService = {
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
-		await orm(c).update(setting).set({ ...params }).returning().get();
+		try {
+			await orm(c).update(setting).set({ ...params }).returning().get();
+		} catch (updateErr) {
+			console.warn('ORM update failed, ensuring columns exist:', updateErr.message);
+			await this.selectSettingRow(c);
+			await orm(c).update(setting).set({ ...params }).run();
+		}
 		await this.refresh(c);
 	},
 
 	async setBlacklist(c, params) {
 		const { blackSubject, blackContent, blackFrom } = params;
-		await orm(c).update(setting).set({ blackSubject, blackContent, blackFrom }).run();
+		try {
+			await orm(c).update(setting).set({ blackSubject, blackContent, blackFrom }).run();
+		} catch (e) {
+			await this.selectSettingRow(c);
+			await orm(c).update(setting).set({ blackSubject, blackContent, blackFrom }).run();
+		}
 		await this.refresh(c);
 		return this.get(c);
 	},
