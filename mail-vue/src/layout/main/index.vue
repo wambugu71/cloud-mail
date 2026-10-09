@@ -147,6 +147,8 @@ const handleResize = () => {
 .main-box-show {
   display: grid;
   grid-template-columns: 260px  1fr;
+  flex: 1;
+  min-height: 0;
   height: calc(100% - 60px);
   @media (max-width: 767px) {
     grid-template-columns: 1fr;
@@ -156,11 +158,16 @@ const handleResize = () => {
 .main-box-hide {
   display: grid;
   grid-template-columns: 1fr;
+  flex: 1;
+  min-height: 0;
   height: calc(100% - 60px);
 }
 
 
 .main-view {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
   background: var(--el-bg-color);
 
   @media (max-width: 1024px) {

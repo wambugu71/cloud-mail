@@ -122,8 +122,8 @@ const settingService = {
 	async get(c, showSiteKey = false) {
 
 		const [settingRow, recordList] = await Promise.all([
-			await this.query(c),
-			verifyRecordService.selectListByIP(c)
+			this.query(c),
+			verifyRecordService.selectListByIP(c).catch(() => [])
 		]);
 
 		const res = { ...settingRow };
@@ -158,7 +158,8 @@ const settingService = {
 		let regVerifyOpen = false
 		let addVerifyOpen = false
 
-		recordList.forEach(row => {
+		const records = Array.isArray(recordList) ? recordList : [];
+		records.forEach(row => {
 			if (row.type === verifyRecordType.REG) {
 				regVerifyOpen = row.count >= res.regVerifyCount
 			}

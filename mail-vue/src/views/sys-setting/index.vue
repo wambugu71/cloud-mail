@@ -3,7 +3,7 @@
     <div class="loading" :class="firstLoading ? 'loading-show' : 'loading-hide'" v-if="firstLoading">
       <loading/>
     </div>
-    <el-scrollbar class="scroll" v-show="!firstLoading">
+    <div class="scroll" v-show="!firstLoading">
       <div class="scroll-body">
         <div class="card-grid">
           <!-- Website Settings Card -->
@@ -900,12 +900,12 @@
         </el-form>
         <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveAiCodeFilter">{{ $t('save') }}</el-button>
       </el-dialog>
-    </el-scrollbar>
+    </div>
   </div>
 </template>
 
 <script setup>
-import {computed, defineOptions, reactive, ref} from "vue";
+import {computed, defineOptions, reactive, ref, onActivated} from "vue";
 import {deleteBackground, setBackground, setBlackList, settingCleanEmails, settingQuery, settingSet, testWebhook} from "@/request/setting.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useSettingStore} from "@/store/setting.js";
@@ -1087,6 +1087,10 @@ const tgMsgLabelWidth = computed(() => locale.value === 'en' ? '120px' : '100px'
 
 getSettings()
 getUpdate()
+
+onActivated(() => {
+  getSettings()
+})
 
 function getSettings() {
   settingQuery().then(settingData => {
@@ -1757,15 +1761,17 @@ function editSetting(settingForm, refreshStatus = true) {
 
 <style scoped lang="scss">
 .settings-container {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  width: 100%;
   background: var(--extra-light-fill) !important;
   position: relative;
+  box-sizing: border-box;
 
   .loading {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 300px;
     height: 100%;
     z-index: 2;
     width: 100%;
@@ -1788,11 +1794,7 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .scroll {
   width: 100%;
-  height: 100%;
-
-  :deep(.el-scrollbar__view) {
-    min-height: 100%;
-  }
+  min-height: 100%;
 
   .scroll-body {
     min-height: 100%;

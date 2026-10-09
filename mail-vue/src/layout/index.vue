@@ -175,10 +175,11 @@ function openSend() {
 
 /* ── Main container ─────────────────────────────────────── */
 .main-container {
+  height: 100%;
   min-height: 100%;
   flex-direction: column;
   background: var(--el-bg-color);
-  overflow-y: auto;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
 }
 

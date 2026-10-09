@@ -72,7 +72,7 @@ const telegramService = {
 
 		await Promise.all(tgChatIds.map(async chatId => {
 			try {
-				const res = await fetch(`https://api.telegram.org/bot${tgBotToken}/sendMessage`, {
+				let res = await fetch(`https://api.telegram.org/bot${tgBotToken}/sendMessage`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json'
@@ -87,7 +87,21 @@ const telegramService = {
 					})
 				});
 				if (!res.ok) {
-					console.error(`转发 Telegram 失败 status: ${res.status} response: ${await res.text()}`);
+					const errText = await res.text();
+					console.error(`转发 Telegram 失败 status: ${res.status} response: ${errText}`);
+					// Fallback: send a concise plain text message without HTML formatting
+					if (res.status === 400) {
+						const fallbackText = `New Mail\nFrom: ${email.sendEmail || email.name || 'Unknown'}\nTo: ${email.toEmail || ''}\nSubject: ${(email.subject || '').slice(0, 200)}`;
+						await fetch(`https://api.telegram.org/bot${tgBotToken}/sendMessage`, {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({
+								chat_id: chatId,
+								text: fallbackText,
+								reply_markup: { inline_keyboard: inlineKeyboard }
+							})
+						}).catch(err => console.error('Telegram fallback failed:', err));
+					}
 				}
 			} catch (e) {
 				console.error(`转发 Telegram 失败:`, e.message);
