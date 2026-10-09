@@ -3,7 +3,7 @@
     <div class="loading" :class="firstLoading ? 'loading-show' : 'loading-hide'" v-if="firstLoading">
       <loading/>
     </div>
-    <div class="scroll" v-show="!firstLoading">
+    <div class="scroll">
       <div class="scroll-body">
         <div class="card-grid">
           <!-- Website Settings Card -->
@@ -931,7 +931,7 @@ const currentVersion = 'v2.9.0'
 const hasUpdate = ref(false)
 let getUpdateErrorCount = 1;
 const {t, locale} = useI18n();
-const firstLoading = ref(true)
+const firstLoading = ref(false)
 const backgroundImage = ref('')
 const localUpShow = ref(false)
 const accountStore = useAccountStore();

@@ -41,7 +41,7 @@ jobs:
       - name: ⚙ 设置 pnpm / Set up pnpm
         uses: pnpm/action-setup@v4.1.0
         with:
-          version: latest
+          version: 9
 
       - name: ⚙ 设置 Node.js / Set up Node.js
         uses: actions/setup-node@v4
@@ -51,7 +51,7 @@ jobs:
           cache-dependency-path: "./mail-worker/pnpm-lock.yaml"
 
       - name: 📦 安装依赖 / Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
         working-directory: ./mail-worker
 
       - name: 📡 禁用 Wrangler 遥测 / Disable wrangler telemetry
