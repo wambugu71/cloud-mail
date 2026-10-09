@@ -10,6 +10,8 @@ const zh = {
     permissions: '权限控制',
     inviteCode: '注册密钥',
     SystemSettings: '系统设置',
+    openSystemSettings: '打开系统设置',
+    systemSettingsPortalDesc: '配置站点注册、邮件域名、推送通知、对象存储和 Webhook。',
     noMoreData: '没有更多数据了',
     noMessagesFound: '没有任何邮件',
     addAccount: '添加邮箱',

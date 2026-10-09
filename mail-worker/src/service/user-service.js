@@ -29,10 +29,12 @@ const userService = {
 			throw new BizError(t('authExpired'), 401);
 		}
 
+		const isAdmin = emailUtils.isAdmin(c, userRow.email) || userRow.type === 0;
+
 		const [account, roleRow, permKeys] = await Promise.all([
 			accountService.selectByEmailIncludeDel(c, userRow.email),
 			roleService.selectById(c, userRow.type),
-			userRow.email === c.env.admin ? Promise.resolve(['*']) : permService.userPermKeys(c, userId)
+			isAdmin ? Promise.resolve(['*']) : permService.userPermKeys(c, userId)
 		]);
 
 		const user = {};
@@ -45,7 +47,7 @@ const userService = {
 		user.role = roleRow;
 		user.type = userRow.type;
 
-		if (c.env.admin === userRow.email) {
+		if (isAdmin) {
 			user.role = constant.ADMIN_ROLE
 			user.type = 0;
 		}
@@ -199,7 +201,7 @@ const userService = {
 				sendAction.hasPerm = false;
 			}
 
-			if (user.email === c.env.admin) {
+			if (emailUtils.isAdmin(c, user.email) || user.type === 0) {
 				sendAction.sendType = constant.ADMIN_ROLE.sendType;
 				sendAction.sendCount = constant.ADMIN_ROLE.sendCount;
 				sendAction.hasPerm = true;

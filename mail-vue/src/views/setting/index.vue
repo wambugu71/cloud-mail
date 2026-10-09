@@ -199,6 +199,21 @@
           </button>
         </div>
       </section>
+
+      <!-- System Settings Section (For Admins) -->
+      <section class="bento-card col-span-full sys-settings-portal" v-if="hasPerm('setting:query')">
+        <div class="card-header">
+          <Icon icon="eos-icons:system-ok-outlined" class="card-icon" />
+          <h2 class="card-title">{{ $t('SystemSettings') }}</h2>
+        </div>
+        <p class="card-desc">{{ $t('systemSettingsPortalDesc') }}</p>
+        <div class="card-footer" style="padding-top:14px">
+          <el-button type="primary" @click="router.push({ name: 'sys-setting' })" class="save-btn">
+            <Icon icon="eos-icons:system-ok-outlined" width="16" height="16" style="margin-right:6px" />
+            {{ $t('openSystemSettings') }}
+          </el-button>
+        </div>
+      </section>
     </div>
 
     <!-- Password Dialog -->
@@ -220,6 +235,7 @@ import router from "@/router/index.js";
 import { accountSetName, accountSetSignature } from "@/request/account.js";
 import { useAccountStore } from "@/store/account.js";
 import { useI18n } from "vue-i18n";
+import { hasPerm } from "@/perm/perm.js";
 import tinyEditor from "@/components/tiny-editor/index.vue";
 import { Icon } from "@iconify/vue";
 import { useUiStore } from "@/store/ui.js";

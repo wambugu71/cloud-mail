@@ -60,7 +60,7 @@ const accountService = {
 		const userRow = await userService.selectById(c, userId);
 		const roleRow = await roleService.selectById(c, userRow.type);
 
-		if (userRow.email !== c.env.admin) {
+		if (!emailUtils.isAdmin(c, userRow.email) && userRow.type !== 0) {
 
 			if (roleRow.accountCount > 0) {
 				const userAccountCount = await accountService.countUserAccount(c, userId)

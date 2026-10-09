@@ -10,6 +10,8 @@ const en = {
     permissions: 'Role',
     inviteCode: 'Invite Code',
     SystemSettings: 'System Settings',
+    openSystemSettings: 'Open System Settings',
+    systemSettingsPortalDesc: 'Configure site registration, email domains, push notifications, storage, and webhooks.',
     noMoreData: 'No more data',
     noMessagesFound: 'No messages found',
     addAccount: 'Add Email Address',

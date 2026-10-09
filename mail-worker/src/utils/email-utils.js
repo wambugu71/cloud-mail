@@ -62,6 +62,11 @@ const emailUtils = {
 			console.error(e)
 			return ''
 		}
+	},
+
+	isAdmin(c, email) {
+		if (!c?.env?.admin || typeof email !== 'string') return false;
+		return c.env.admin.trim().toLowerCase() === email.trim().toLowerCase();
 	}
 };
 

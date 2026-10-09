@@ -1091,8 +1091,8 @@ getUpdate()
 function getSettings() {
   settingQuery().then(settingData => {
     setting.value = settingData
-    settingStore.domainList = settingData.domainList;
-    resendTokenForm.domain = setting.value.domainList[0]
+    settingStore.domainList = settingData?.domainList || [];
+    resendTokenForm.domain = setting.value.domainList?.[0] || ''
     loginOpacity.value = setting.value.loginOpacity
     minEmailPrefix.value = setting.value.minEmailPrefix
     firstLoading.value = false
@@ -1106,6 +1106,13 @@ function getSettings() {
     resetEmailPrefix()
     resetBlackList()
     resetAiCodeFilter()
+  }).catch((err) => {
+    firstLoading.value = false
+    ElMessage({
+      message: err?.message || t('unauthorized') || 'Failed to load system settings',
+      type: 'error',
+      plain: true
+    })
   })
 }
 

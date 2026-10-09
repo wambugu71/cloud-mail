@@ -10,6 +10,8 @@ const sw = {
     permissions: 'Jukumu',
     inviteCode: 'Msimbo wa Mwaliko',
     SystemSettings: 'Mipangilio ya Mfumo',
+    openSystemSettings: 'Fungua Mipangilio ya Mfumo',
+    systemSettingsPortalDesc: 'Sanidi usajili wa tovuti, vikoa vya barua pepe, arifa, hifadhi na webhooks.',
     noMoreData: 'Hakuna data zaidi',
     noMessagesFound: 'Hakuna jumbe zilizopatikana',
     addAccount: 'Ongeza Anwani ya Barua Pepe',
