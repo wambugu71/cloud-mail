@@ -379,7 +379,7 @@ const zh = {
     oneEightyDays: '180天',
     threeSixtyFiveDays: '365天',
     subaddressMechanism: '子地址机制 (+)',
-    subaddressDesc: '支持加号子地址（如 user+tag@domain.com 自动路由至 user@domain.com）',
+    subaddressDesc: "支持加号子地址（如 user+tag{'@'}domain.com 自动路由至 user{'@'}domain.com）",
     subaddress: '子地址',
 }
 export default zh

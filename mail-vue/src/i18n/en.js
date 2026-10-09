@@ -405,7 +405,7 @@ const en = {
     oneEightyDays: '180 Days',
     threeSixtyFiveDays: '365 Days',
     subaddressMechanism: 'Subaddressing (+)',
-    subaddressDesc: 'Support plus-addressing (e.g. user+tag@domain.com routed to user@domain.com)',
+    subaddressDesc: "Support plus-addressing (e.g. user+tag{'@'}domain.com routed to user{'@'}domain.com)",
     subaddress: 'Subaddress',
 }
 

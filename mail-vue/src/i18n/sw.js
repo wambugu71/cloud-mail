@@ -405,7 +405,7 @@ const sw = {
     oneEightyDays: 'Siku 180',
     threeSixtyFiveDays: 'Siku 365',
     subaddressMechanism: 'Mfumo wa Anwani Ndogo (+)',
-    subaddressDesc: 'Kuwezesha anwani za nyongeza (k.m. user+tag@domain.com huelekezwa kwa user@domain.com)',
+    subaddressDesc: "Kuwezesha anwani za nyongeza (k.m. user+tag{'@'}domain.com huelekezwa kwa user{'@'}domain.com)",
     subaddress: 'Anwani Ndogo',
 }
 

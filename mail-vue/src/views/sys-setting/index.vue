@@ -232,7 +232,7 @@
               <div class="setting-item">
                 <div>
                   <span>{{ $t('subaddressMechanism') }}</span>
-                  <el-tooltip effect="dark" :content="$t('subaddressDesc')">
+                  <el-tooltip effect="dark" :content="subaddressDescText">
                     <Icon class="warning" icon="fe:warning" width="18" height="18"/>
                   </el-tooltip>
                 </div>
@@ -932,6 +932,13 @@ const hasUpdate = ref(false)
 let getUpdateErrorCount = 1;
 const {t, locale} = useI18n();
 const firstLoading = ref(false)
+const subaddressDescText = computed(() => {
+  try {
+    return t('subaddressDesc');
+  } catch (e) {
+    return 'Support plus-addressing (e.g. user+tag@domain.com routed to user@domain.com)';
+  }
+});
 const backgroundImage = ref('')
 const localUpShow = ref(false)
 const accountStore = useAccountStore();
