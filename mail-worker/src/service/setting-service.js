@@ -14,7 +14,16 @@ const settingService = {
 
 	async refresh(c) {
 		const settingRow = await orm(c).select().from(setting).get();
-		settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
+		if (!settingRow) return;
+		if (typeof settingRow.resendTokens === 'string') {
+			try {
+				settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
+			} catch {
+				settingRow.resendTokens = {};
+			}
+		} else if (!settingRow.resendTokens || typeof settingRow.resendTokens !== 'object') {
+			settingRow.resendTokens = {};
+		}
 		c.set('setting', settingRow);
 		await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
 	},
@@ -25,10 +34,34 @@ const settingService = {
 			return c.get('setting')
 		}
 
-		const setting = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
+		let settingData = await c.env.kv.get(KvConst.SETTING, { type: 'json' });
 
-		if (!setting) {
-			throw new BizError('数据库未初始化 Database not initialized.');
+		if (!settingData) {
+			const settingRow = await orm(c).select().from(setting).get();
+			if (!settingRow) {
+				throw new BizError('数据库未初始化 Database not initialized.');
+			}
+			if (typeof settingRow.resendTokens === 'string') {
+				try {
+					settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
+				} catch {
+					settingRow.resendTokens = {};
+				}
+			} else if (!settingRow.resendTokens || typeof settingRow.resendTokens !== 'object') {
+				settingRow.resendTokens = {};
+			}
+			await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
+			settingData = settingRow;
+		}
+
+		if (typeof settingData.resendTokens === 'string') {
+			try {
+				settingData.resendTokens = JSON.parse(settingData.resendTokens);
+			} catch {
+				settingData.resendTokens = {};
+			}
+		} else if (!settingData.resendTokens || typeof settingData.resendTokens !== 'object') {
+			settingData.resendTokens = {};
 		}
 
 		let domainList = c.env.domain;
@@ -46,7 +79,7 @@ const settingService = {
 		}
 
 		domainList = domainList.map(item => '@' + item);
-		setting.domainList = domainList;
+		settingData.domainList = domainList;
 
 
 		let linuxdoSwitch = c.env.linuxdo_switch;
@@ -70,16 +103,20 @@ const settingService = {
 			projectLink = true
 		}
 
-		setting.projectLink = projectLink;
+		settingData.projectLink = projectLink;
 
-		setting.linuxdoClientId = c.env.linuxdo_client_id;
-		setting.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
-		setting.linuxdoSwitch = linuxdoSwitch;
+		settingData.linuxdoClientId = c.env.linuxdo_client_id;
+		settingData.linuxdoCallbackUrl = c.env.linuxdo_callback_url;
+		settingData.linuxdoSwitch = linuxdoSwitch;
 
-		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
+		if (typeof settingData.emailPrefixFilter === 'string') {
+			settingData.emailPrefixFilter = settingData.emailPrefixFilter.split(",").filter(Boolean);
+		} else if (!Array.isArray(settingData.emailPrefixFilter)) {
+			settingData.emailPrefixFilter = [];
+		}
 
-		c.set?.('setting', setting);
-		return setting;
+		c.set?.('setting', settingData);
+		return settingData;
 	},
 
 	async get(c, showSiteKey = false) {
@@ -89,54 +126,74 @@ const settingService = {
 			verifyRecordService.selectListByIP(c)
 		]);
 
+		const res = { ...settingRow };
 
 		if (!showSiteKey) {
-			settingRow.siteKey = settingRow.siteKey ? `${settingRow.siteKey.slice(0, 6)}******` : null;
+			res.siteKey = res.siteKey ? `${res.siteKey.slice(0, 6)}******` : null;
 		}
 
-		settingRow.secretKey = settingRow.secretKey ? `${settingRow.secretKey.slice(0, 6)}******` : null;
+		res.secretKey = res.secretKey ? `${res.secretKey.slice(0, 6)}******` : null;
 
-		Object.keys(settingRow.resendTokens).forEach(key => {
-			settingRow.resendTokens[key] = `${settingRow.resendTokens[key].slice(0, 12)}******`;
+		let maskedTokens = {};
+		if (typeof res.resendTokens === 'string') {
+			try {
+				maskedTokens = JSON.parse(res.resendTokens);
+			} catch {
+				maskedTokens = {};
+			}
+		} else if (res.resendTokens && typeof res.resendTokens === 'object') {
+			maskedTokens = { ...res.resendTokens };
+		}
+
+		Object.keys(maskedTokens).forEach(key => {
+			const tokenVal = maskedTokens[key];
+			maskedTokens[key] = typeof tokenVal === 'string' ? `${tokenVal.slice(0, 12)}******` : '';
 		});
+		res.resendTokens = maskedTokens;
 
-		settingRow.s3AccessKey = settingRow.s3AccessKey ? `${settingRow.s3AccessKey.slice(0, 12)}******` : null;
-		settingRow.s3SecretKey = settingRow.s3SecretKey ? `${settingRow.s3SecretKey.slice(0, 12)}******` : null;
-		settingRow.hasR2 = !!c.env.r2
+		res.s3AccessKey = res.s3AccessKey ? `${res.s3AccessKey.slice(0, 12)}******` : null;
+		res.s3SecretKey = res.s3SecretKey ? `${res.s3SecretKey.slice(0, 12)}******` : null;
+		res.hasR2 = !!c.env.r2
 
 		let regVerifyOpen = false
 		let addVerifyOpen = false
 
 		recordList.forEach(row => {
 			if (row.type === verifyRecordType.REG) {
-				regVerifyOpen = row.count >= settingRow.regVerifyCount
+				regVerifyOpen = row.count >= res.regVerifyCount
 			}
 			if (row.type === verifyRecordType.ADD) {
-				addVerifyOpen = row.count >= settingRow.addVerifyCount
+				addVerifyOpen = row.count >= res.addVerifyCount
 			}
 		})
 
-		settingRow.regVerifyOpen = regVerifyOpen
-		settingRow.addVerifyOpen = addVerifyOpen
+		res.regVerifyOpen = regVerifyOpen
+		res.addVerifyOpen = addVerifyOpen
 
-		settingRow.storageType = await r2Service.storageType(c);
+		res.storageType = await r2Service.storageType(c);
 
-		return settingRow;
+		return res;
 	},
 
 	async set(c, params) {
 		const settingData = await this.query(c);
-		let resendTokens = { ...settingData.resendTokens, ...params.resendTokens };
+		let existingTokens = {};
+		if (typeof settingData.resendTokens === 'string') {
+			try { existingTokens = JSON.parse(settingData.resendTokens); } catch { existingTokens = {}; }
+		} else if (settingData.resendTokens && typeof settingData.resendTokens === 'object') {
+			existingTokens = settingData.resendTokens;
+		}
+		let resendTokens = { ...existingTokens, ...(params.resendTokens || {}) };
 		Object.keys(resendTokens).forEach(domain => {
 			if (!resendTokens[domain]) delete resendTokens[domain];
 		});
 
 		if (Array.isArray(params.emailPrefixFilter)) {
-			params.emailPrefixFilter = params.emailPrefixFilter + '';
+			params.emailPrefixFilter = params.emailPrefixFilter.join(',');
 		}
 
 		if (Array.isArray(params.aiCodeFilter)) {
-			params.aiCodeFilter = params.aiCodeFilter + '';
+			params.aiCodeFilter = params.aiCodeFilter.join(',');
 		}
 
 		if (typeof params.webhookHeaders === 'object' && params.webhookHeaders !== null) {

@@ -1,9 +1,9 @@
 <template>
   <div class="settings-container">
-    <div class="loading" :class="firstLoading ? 'loading-show' : 'loading-hide'">
+    <div class="loading" :class="firstLoading ? 'loading-show' : 'loading-hide'" v-if="firstLoading">
       <loading/>
     </div>
-    <el-scrollbar class="scroll" v-if="!firstLoading">
+    <el-scrollbar class="scroll" v-show="!firstLoading">
       <div class="scroll-body">
         <div class="card-grid">
           <!-- Website Settings Card -->
@@ -1090,30 +1090,51 @@ getUpdate()
 
 function getSettings() {
   settingQuery().then(settingData => {
-    setting.value = settingData
+    if (!settingData) return;
+
+    if (typeof settingData.resendTokens === 'string') {
+      try {
+        settingData.resendTokens = JSON.parse(settingData.resendTokens);
+      } catch {
+        settingData.resendTokens = {};
+      }
+    }
+    if (!settingData.resendTokens || typeof settingData.resendTokens !== 'object' || Array.isArray(settingData.resendTokens)) {
+      settingData.resendTokens = {};
+    }
+
+    if (typeof settingData.emailPrefixFilter === 'string') {
+      settingData.emailPrefixFilter = settingData.emailPrefixFilter.split(',').filter(Boolean);
+    } else if (!Array.isArray(settingData.emailPrefixFilter)) {
+      settingData.emailPrefixFilter = [];
+    }
+
+    setting.value = { ...setting.value, ...settingData };
     settingStore.domainList = settingData?.domainList || [];
-    resendTokenForm.domain = setting.value.domainList?.[0] || ''
-    loginOpacity.value = setting.value.loginOpacity
-    minEmailPrefix.value = setting.value.minEmailPrefix
-    firstLoading.value = false
-    backgroundUrl.value = setting.value.background?.startsWith('http') ? setting.value.background : ''
-    editTitle.value = setting.value.title
-    r2DomainInput.value = setting.value.r2Domain
-    addVerifyCount.value = setting.value.addVerifyCount
-    regVerifyCount.value = setting.value.regVerifyCount
-    resetNoticeForm()
-    resetAddS3Form()
-    resetEmailPrefix()
-    resetBlackList()
-    resetAiCodeFilter()
+    resendTokenForm.domain = setting.value.domainList?.[0] || '';
+    loginOpacity.value = setting.value.loginOpacity ?? 1;
+    minEmailPrefix.value = setting.value.minEmailPrefix ?? 0;
+    backgroundUrl.value = setting.value.background?.startsWith('http') ? setting.value.background : '';
+    editTitle.value = setting.value.title || '';
+    r2DomainInput.value = setting.value.r2Domain || '';
+    addVerifyCount.value = setting.value.addVerifyCount ?? 1;
+    regVerifyCount.value = setting.value.regVerifyCount ?? 1;
+
+    try { resetNoticeForm(); } catch (e) { console.error('resetNoticeForm error:', e); }
+    try { resetAddS3Form(); } catch (e) { console.error('resetAddS3Form error:', e); }
+    try { resetEmailPrefix(); } catch (e) { console.error('resetEmailPrefix error:', e); }
+    try { resetBlackList(); } catch (e) { console.error('resetBlackList error:', e); }
+    try { resetAiCodeFilter(); } catch (e) { console.error('resetAiCodeFilter error:', e); }
   }).catch((err) => {
-    firstLoading.value = false
+    console.error('Failed to query settings:', err);
     ElMessage({
       message: err?.message || t('unauthorized') || 'Failed to load system settings',
       type: 'error',
       plain: true
-    })
-  })
+    });
+  }).finally(() => {
+    firstLoading.value = false;
+  });
 }
 
 
@@ -1132,31 +1153,38 @@ function openRegVerifyCount() {
 }
 
 function resetAddS3Form() {
-  s3.bucket = setting.value.bucket
-  s3.endpoint = setting.value.endpoint
-  s3.region = setting.value.region
-  s3.s3AccessKey = ''
-  s3.s3SecretKey = ''
-  s3.forcePathStyle = setting.value.forcePathStyle
+  if (!setting.value) return;
+  s3.bucket = setting.value.bucket || '';
+  s3.endpoint = setting.value.endpoint || '';
+  s3.region = setting.value.region || '';
+  s3.s3AccessKey = '';
+  s3.s3SecretKey = '';
+  s3.forcePathStyle = setting.value.forcePathStyle ?? 1;
 }
 
 const resendList = computed(() => {
+  const tokens = setting.value?.resendTokens;
+  if (!tokens || typeof tokens !== 'object' || Array.isArray(tokens)) {
+    return [];
+  }
 
-  let list = Object.keys(setting.value.resendTokens).map(key => {
+  let list = Object.keys(tokens).map(key => {
     return {
       key: key,
-      value: setting.value.resendTokens[key]
+      value: tokens[key]
     };
-  })
+  });
 
   if (list.length > 0) {
+    try {
+      const key = list.reduce((a, b) => compareByLengthAndUpperCase(a, b, 'key'))?.key || '';
+      emailColumnWidth.value = getTextWidth(key) + 30;
 
-    const key = list.reduce((a, b) => compareByLengthAndUpperCase(a, b, 'key')).key;
-    emailColumnWidth.value = getTextWidth(key) + 30;
-
-    const value = list.reduce((a, b) => compareByLengthAndUpperCase(a, b, 'value')).value;
-    tokenColumnWidth.value = getTextWidth(value) + 30;
-
+      const value = list.reduce((a, b) => compareByLengthAndUpperCase(a, b, 'value'))?.value || '';
+      tokenColumnWidth.value = getTextWidth(value) + 30;
+    } catch (e) {
+      console.warn('Error calculating column widths:', e);
+    }
   }
 
   return list;
@@ -1206,18 +1234,20 @@ function closedSetBackground() {
 }
 
 function openTgSetting() {
-  tgBotStatus.value = setting.value.tgBotStatus
-  tgBotToken.value = setting.value.tgBotToken
-  customDomain.value = setting.value.customDomain
-  tgMsgFrom.value = setting.value.tgMsgFrom
-  tgMsgText.value = setting.value.tgMsgText
-  tgMsgTo.value = setting.value.tgMsgTo
-  tgChatId.value = []
-  if (setting.value.tgChatId) {
-    const list = setting.value.tgChatId.split(',')
-    tgChatId.value.push(...list)
+  if (!setting.value) return;
+  tgBotStatus.value = setting.value.tgBotStatus ?? 1;
+  tgBotToken.value = setting.value.tgBotToken || '';
+  customDomain.value = setting.value.customDomain || '';
+  tgMsgFrom.value = setting.value.tgMsgFrom || 'only-name';
+  tgMsgText.value = setting.value.tgMsgText || 'hide';
+  tgMsgTo.value = setting.value.tgMsgTo || 'show';
+  tgChatId.value = [];
+  if (typeof setting.value.tgChatId === 'string' && setting.value.tgChatId) {
+    tgChatId.value = setting.value.tgChatId.split(',').filter(Boolean);
+  } else if (Array.isArray(setting.value.tgChatId)) {
+    tgChatId.value = [...setting.value.tgChatId];
   }
-  tgSettingShow.value = true
+  tgSettingShow.value = true;
 }
 
 function openWebhookSetting() {
@@ -1239,14 +1269,15 @@ function openResendList() {
 }
 
 function resetNoticeForm() {
-  noticeForm.notice = setting.value.notice
-  noticeForm.noticeContent = setting.value.noticeContent
-  noticeForm.noticeDuration = setting.value.noticeDuration
-  noticeForm.noticeTitle = setting.value.noticeTitle
-  noticeForm.noticePosition = setting.value.noticePosition
-  noticeForm.noticeType = setting.value.noticeType
-  noticeForm.noticeOffset = setting.value.noticeOffset
-  noticeForm.noticeWidth = setting.value.noticeWidth
+  if (!setting.value) return;
+  noticeForm.notice = setting.value.notice ?? 0;
+  noticeForm.noticeContent = setting.value.noticeContent ?? '';
+  noticeForm.noticeDuration = setting.value.noticeDuration ?? 0;
+  noticeForm.noticeTitle = setting.value.noticeTitle ?? '';
+  noticeForm.noticePosition = setting.value.noticePosition ?? '';
+  noticeForm.noticeType = setting.value.noticeType ?? '';
+  noticeForm.noticeOffset = setting.value.noticeOffset ?? 0;
+  noticeForm.noticeWidth = setting.value.noticeWidth ?? 400;
 }
 
 function saveNoticePopup() {
@@ -1261,13 +1292,15 @@ function previewNoticePopup() {
 }
 
 function openThirdEmailSetting() {
-  forwardEmail.value = []
-  forwardStatus.value = setting.value.forwardStatus
-  if (setting.value.forwardEmail) {
-    const list = setting.value.forwardEmail.split(',')
-    forwardEmail.value.push(...list)
+  if (!setting.value) return;
+  forwardEmail.value = [];
+  forwardStatus.value = setting.value.forwardStatus ?? 1;
+  if (typeof setting.value.forwardEmail === 'string' && setting.value.forwardEmail) {
+    forwardEmail.value = setting.value.forwardEmail.split(',').filter(Boolean);
+  } else if (Array.isArray(setting.value.forwardEmail)) {
+    forwardEmail.value = [...setting.value.forwardEmail];
   }
-  thirdEmailShow.value = true
+  thirdEmailShow.value = true;
 }
 
 function openEmailPrefix() {
@@ -1275,13 +1308,15 @@ function openEmailPrefix() {
 }
 
 function openForwardRules() {
-  ruleType.value = setting.value.ruleType
-  ruleEmail.value = []
-  if (setting.value.ruleEmail) {
-    const list = setting.value.ruleEmail.split(',')
-    ruleEmail.value.push(...list)
+  if (!setting.value) return;
+  ruleType.value = setting.value.ruleType ?? 0;
+  ruleEmail.value = [];
+  if (typeof setting.value.ruleEmail === 'string' && setting.value.ruleEmail) {
+    ruleEmail.value = setting.value.ruleEmail.split(',').filter(Boolean);
+  } else if (Array.isArray(setting.value.ruleEmail)) {
+    ruleEmail.value = [...setting.value.ruleEmail];
   }
-  forwardRulesShow.value = true
+  forwardRulesShow.value = true;
 }
 
 function emailAddTag(val) {
@@ -1440,8 +1475,15 @@ function doOpacityChange() {
 }
 
 function resetEmailPrefix() {
-  minEmailPrefix.value = setting.value.minEmailPrefix
-  emailPrefixFilter.value = setting.value.emailPrefixFilter
+  if (!setting.value) return;
+  minEmailPrefix.value = setting.value.minEmailPrefix ?? 0;
+  if (Array.isArray(setting.value.emailPrefixFilter)) {
+    emailPrefixFilter.value = [...setting.value.emailPrefixFilter];
+  } else if (typeof setting.value.emailPrefixFilter === 'string' && setting.value.emailPrefixFilter) {
+    emailPrefixFilter.value = setting.value.emailPrefixFilter.split(',').filter(Boolean);
+  } else {
+    emailPrefixFilter.value = [];
+  }
 }
 
 function saveEmailPrefix() {
@@ -1452,13 +1494,23 @@ function saveEmailPrefix() {
 }
 
 function resetBlackList() {
-  blackListForm.value.blackFrom = setting.value.blackFrom ? setting.value.blackFrom.split(',') : []
-  blackListForm.value.blackContent = setting.value.blackContent ? setting.value.blackContent.split(',') : []
-  blackListForm.value.blackSubject = setting.value.blackSubject ? setting.value.blackSubject.split(',') : []
+  if (!setting.value) return;
+  blackListForm.value.blackFrom = typeof setting.value.blackFrom === 'string' && setting.value.blackFrom
+    ? setting.value.blackFrom.split(',').filter(Boolean)
+    : (Array.isArray(setting.value.blackFrom) ? [...setting.value.blackFrom] : []);
+  blackListForm.value.blackContent = typeof setting.value.blackContent === 'string' && setting.value.blackContent
+    ? setting.value.blackContent.split(',').filter(Boolean)
+    : (Array.isArray(setting.value.blackContent) ? [...setting.value.blackContent] : []);
+  blackListForm.value.blackSubject = typeof setting.value.blackSubject === 'string' && setting.value.blackSubject
+    ? setting.value.blackSubject.split(',').filter(Boolean)
+    : (Array.isArray(setting.value.blackSubject) ? [...setting.value.blackSubject] : []);
 }
 
 function resetAiCodeFilter() {
-  aiCodeFilter.value = setting.value.aiCodeFilter ? setting.value.aiCodeFilter.split(',') : []
+  if (!setting.value) return;
+  aiCodeFilter.value = typeof setting.value.aiCodeFilter === 'string' && setting.value.aiCodeFilter
+    ? setting.value.aiCodeFilter.split(',').filter(Boolean)
+    : (Array.isArray(setting.value.aiCodeFilter) ? [...setting.value.aiCodeFilter] : []);
 }
 
 function saveBlackList() {
@@ -1736,10 +1788,10 @@ function editSetting(settingForm, refreshStatus = true) {
 
 .scroll {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
 
   :deep(.el-scrollbar__view) {
-    height: 100%;
+    min-height: 100%;
   }
 
   .scroll-body {

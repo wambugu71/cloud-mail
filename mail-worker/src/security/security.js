@@ -141,18 +141,18 @@ app.use('*', async (c, next) => {
 
 	if (permIndex > -1) {
 
-		const permKeys = await permService.userPermKeys(c, authInfo.user.userId);
-
-		const userPaths = permKeyToPaths(permKeys);
-
-		const userPermIndex = userPaths.findIndex(item => {
-			return path.startsWith(item);
-		});
-
 		const isAdmin = emailUtils.isAdmin(c, authInfo.user?.email) || authInfo.user?.type === 0;
 
-		if (userPermIndex === -1 && !isAdmin) {
-			throw new BizError(t('unauthorized'), 403);
+		if (!isAdmin) {
+			const permKeys = await permService.userPermKeys(c, authInfo.user.userId);
+			const userPaths = permKeyToPaths(permKeys);
+			const userPermIndex = userPaths.findIndex(item => {
+				return path.startsWith(item);
+			});
+
+			if (userPermIndex === -1) {
+				throw new BizError(t('unauthorized'), 403);
+			}
 		}
 
 	}

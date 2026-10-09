@@ -66,7 +66,13 @@ const emailUtils = {
 
 	isAdmin(c, email) {
 		if (!c?.env?.admin || typeof email !== 'string') return false;
-		return c.env.admin.trim().toLowerCase() === email.trim().toLowerCase();
+		const adminStr = c.env.admin.trim().toLowerCase();
+		const userEmail = email.trim().toLowerCase();
+		if (adminStr === userEmail) return true;
+		if (adminStr.includes(',')) {
+			return adminStr.split(',').map(s => s.trim()).includes(userEmail);
+		}
+		return false;
 	}
 };
 

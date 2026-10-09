@@ -37,8 +37,8 @@ export default {
 
 .circular {
   display: inline;
-  height: v-bind(size) + 'px';
-  width: v-bind(size) + 'px';
+  height: 100%;
+  width: 100%;
   animation: loading-rotate 2s linear infinite;
 }
 .path {
